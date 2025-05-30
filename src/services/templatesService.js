@@ -162,10 +162,7 @@ export const templatesService = {
         formData.append("preview_image", templateData.preview_image);
       }
 
-      // Для PUT запроса через FormData нужно добавить _method
-      formData.append("_method", "PUT");
-
-      const response = await apiClient.post(
+      const response = await apiClient.put(
         `/api/v1/canvas_templates/${id}`,
         formData,
         {
@@ -200,13 +197,7 @@ export const templatesService = {
     }
   },
 
-  // Получение категорий шаблонов (не поддерживается API)
-  async getCategories() {
-    // API не поддерживает категории, возвращаем пустой массив
-    return [];
-  },
-
-  // Получение тегов (может не поддерживаться API)
+  // Получение тегов
   async getTags() {
     try {
       const response = await apiClient.get(
@@ -220,7 +211,7 @@ export const templatesService = {
     }
   },
 
-  // Поиск шаблонов (может не поддерживаться API)
+  // Поиск шаблонов
   async searchTemplates(searchQuery, filters = {}) {
     try {
       // Пробуем использовать обычный endpoint с search параметром
@@ -234,74 +225,6 @@ export const templatesService = {
         error.response?.data?.message ||
           error.response?.data?.error ||
           "Ошибка поиска шаблонов"
-      );
-    }
-  },
-
-  // Загрузка файла
-  async uploadFile(file, type = "image") {
-    try {
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("type", type);
-
-      const response = await apiClient.post("/api/v1/upload", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
-
-      return response.data.data || response.data;
-    } catch (error) {
-      console.error("File upload error:", error);
-      throw new Error(
-        error.response?.data?.message ||
-          error.response?.data?.error ||
-          "Ошибка загрузки файла"
-      );
-    }
-  },
-
-  // Дублирование шаблона (может не поддерживаться API)
-  async duplicateTemplate(id) {
-    try {
-      const response = await apiClient.post(
-        `/api/v1/canvas_templates/${id}/duplicate`
-      );
-      return response.data.data || response.data;
-    } catch (error) {
-      console.error("Template duplicate error:", error);
-      // Если API не поддерживает дублирование, делаем это клиентской стороной
-      try {
-        const original = await this.getTemplate(id);
-        const duplicated = {
-          ...original,
-          name: `${original.name} (копия)`,
-          id: undefined, // Удаляем ID чтобы API создал новый
-        };
-        return await this.createTemplate(duplicated);
-      } catch (fallbackError) {
-        throw new Error("Ошибка дублирования шаблона");
-      }
-    }
-  },
-
-  // Изменение видимости шаблона (может не поддерживаться API)
-  async togglePublic(id, isPublic) {
-    try {
-      const response = await apiClient.patch(
-        `/api/v1/canvas_templates/${id}/visibility`,
-        {
-          is_public: isPublic,
-        }
-      );
-      return response.data.data || response.data;
-    } catch (error) {
-      console.error("Template visibility toggle error:", error);
-      throw new Error(
-        error.response?.data?.message ||
-          error.response?.data?.error ||
-          "Ошибка изменения видимости шаблона"
       );
     }
   },

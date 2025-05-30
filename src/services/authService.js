@@ -35,62 +35,6 @@ export const authService = {
     }
   },
 
-  // Выход из системы
-  async logout() {
-    try {
-      // Очищаем токен из localStorage и заголовков без отправки запроса на сервер
-      localStorage.removeItem("auth_token");
-      delete apiClient.defaults.headers.common["Authorization"];
-    } catch (error) {
-      console.error("Logout error:", error);
-      // Продолжаем выход даже если запрос неудачен
-    }
-  },
-
-  // Проверка валидности токена и получение данных пользователя
-  async validateToken() {
-    try {
-      // Проверяем наличие токена локально, так как эндпоинт /api/v1/user не существует
-      const token = this.getToken();
-      if (!token) {
-        throw new Error("No token found");
-      }
-
-      // Возвращаем успешный результат без запроса к API
-      return {
-        user: { email: "user@example.com" }, // Заглушка
-        isValid: true,
-      };
-    } catch (error) {
-      console.error("Token validation error:", error);
-      localStorage.removeItem("auth_token");
-      delete apiClient.defaults.headers.common["Authorization"];
-      throw error;
-    }
-  },
-
-  // Получение текущего пользователя
-  async getCurrentUser() {
-    // Возвращаем заглушку пользователя, так как эндпоинт /api/v1/user не существует
-    return { email: "user@example.com", name: "Пользователь" };
-  },
-
-  // Проверка авторизации
-  isAuthenticated() {
-    const token = localStorage.getItem("auth_token");
-    if (token) {
-      // Устанавливаем токен в заголовки при загрузке приложения
-      apiClient.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-      return true;
-    }
-    return false;
-  },
-
-  // Получение токена
-  getToken() {
-    return localStorage.getItem("auth_token");
-  },
-
   // Инициализация токена при загрузке приложения
   initializeAuth() {
     const token = this.getToken();
