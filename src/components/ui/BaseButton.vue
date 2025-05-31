@@ -5,7 +5,7 @@
     :type="type"
     @click="handleClick"
     v-bind="$attrs"
-    v-on="$listeners"
+    v-on="$listenersWithoutClick"
   >
     <span v-if="loading" class="btn-spinner"></span>
     <slot v-if="!loading"></slot>
@@ -76,6 +76,13 @@ export default {
     },
   },
 
+  data() {
+    return {
+      lastClickTime: 0,
+      clickCooldown: 300, // 300ms cooldown to prevent rapid clicks
+    };
+  },
+
   computed: {
     buttonClasses() {
       return [
@@ -90,11 +97,25 @@ export default {
         },
       ];
     },
+
+    // Исключаем событие click из $listeners чтобы избежать двойной обработки
+    $listenersWithoutClick() {
+      // eslint-disable-next-line no-unused-vars
+      const { click, ...otherListeners } = this.$listeners;
+      return otherListeners;
+    },
   },
 
   methods: {
     handleClick(event) {
       if (!this.disabled && !this.loading) {
+        // Prevent rapid clicks
+        const now = Date.now();
+        if (now - this.lastClickTime < this.clickCooldown) {
+          return;
+        }
+        this.lastClickTime = now;
+
         this.$emit("click", event);
       }
     },

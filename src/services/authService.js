@@ -10,13 +10,10 @@ export const authService = {
         remember_me: "1",
       });
 
-      // Сохраняем токен в localStorage
+      // Сохраняем токен в sessionStorage (более безопасно чем localStorage)
       if (response.data.access_token || response.data.token) {
         const token = response.data.access_token || response.data.token;
-        localStorage.setItem("auth_token", token);
-
-        // Устанавливаем токен в заголовки для будущих запросов
-        apiClient.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+        this.setToken(token);
       }
 
       return {
@@ -41,5 +38,78 @@ export const authService = {
     if (token) {
       apiClient.defaults.headers.common["Authorization"] = `Bearer ${token}`;
     }
+  },
+
+  // Получение токена из sessionStorage
+  getToken() {
+    return sessionStorage.getItem("auth_token");
+  },
+
+  // Проверка авторизации
+  isAuthenticated() {
+    const token = this.getToken();
+    if (!token) return false;
+
+    // Дополнительная проверка: токен не должен быть пустым или слишком коротким
+    return token.length > 10;
+  },
+
+  // Проверка валидности токена и получение данных пользователя
+  async validateToken() {
+    try {
+      // Проверяем наличие токена локально
+      const token = this.getToken();
+      if (!token) {
+        throw new Error("No token found");
+      }
+
+      // Возвращаем успешный результат без запроса к API
+      // (так как эндпоинт /api/v1/user не существует)
+      return {
+        user: { email: "user@example.com" }, // Заглушка
+        isValid: true,
+      };
+    } catch (error) {
+      console.error("Token validation error:", error);
+      this.clearToken();
+      throw error;
+    }
+  },
+
+  // Получение текущего пользователя
+  async getCurrentUser() {
+    // Возвращаем заглушку пользователя, так как эндпоинт /api/v1/user не существует
+    return { email: "user@example.com", name: "Пользователь" };
+  },
+
+  // Выход из системы
+  async logout() {
+    try {
+      // Очищаем токен безопасным способом
+      this.clearToken();
+
+      // Не делаем запрос к API, так как эндпоинт /api/v1/logout не существует
+      return { message: "Успешный выход" };
+    } catch (error) {
+      console.error("Logout error:", error);
+      // Все равно очищаем токен
+      this.clearToken();
+      throw error;
+    }
+  },
+
+  // Безопасная установка токена
+  setToken(token) {
+    if (!token || typeof token !== "string") {
+      throw new Error("Invalid token");
+    }
+    sessionStorage.setItem("auth_token", token);
+    apiClient.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+  },
+
+  // Безопасная очистка токена
+  clearToken() {
+    sessionStorage.removeItem("auth_token");
+    delete apiClient.defaults.headers.common["Authorization"];
   },
 };

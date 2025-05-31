@@ -25,13 +25,27 @@
       </div>
 
       <div class="modal-footer">
-        <BaseButton variant="secondary" @click="$emit('cancel')">
+        <BaseButton
+          variant="secondary"
+          @click="$emit('cancel')"
+          :disabled="loading"
+        >
           {{ cancelText }}
         </BaseButton>
-        <BaseButton :variant="confirmVariant" @click="$emit('confirm')">
+        <BaseButton
+          :variant="confirmVariant"
+          @click="$emit('confirm')"
+          :loading="loading"
+          :disabled="loading"
+        >
           {{ confirmText }}
         </BaseButton>
       </div>
+    </div>
+
+    <!-- Затемнение во время загрузки -->
+    <div v-if="loading" class="loading-overlay">
+      <div class="loading-spinner-large"></div>
     </div>
   </div>
 </template>
@@ -76,6 +90,10 @@ export default {
           "info",
         ].includes(value),
     },
+    loading: {
+      type: Boolean,
+      default: false,
+    },
   },
 
   emits: ["confirm", "cancel"],
@@ -88,7 +106,7 @@ export default {
     document.addEventListener("keydown", this.handleEscape);
   },
 
-  beforeUnmount() {
+  beforeDestroy() {
     // Восстанавливаем прокрутку страницы
     document.body.style.overflow = "";
 
@@ -98,11 +116,16 @@ export default {
 
   methods: {
     handleOverlayClick() {
+      // Не закрываем модальное окно во время загрузки
+      if (this.loading) {
+        return;
+      }
       this.$emit("cancel");
     },
 
     handleEscape(event) {
-      if (event.key === "Escape") {
+      // Не закрываем модальное окно во время загрузки
+      if (event.key === "Escape" && !this.loading) {
         this.$emit("cancel");
       }
     },
@@ -200,6 +223,35 @@ export default {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba($black, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: $border-radius-lg;
+  z-index: 1;
+}
+
+.loading-spinner-large {
+  width: 48px;
+  height: 48px;
+  border: 4px solid rgba($white, 0.3);
+  border-left-color: $white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
   }
 }
 

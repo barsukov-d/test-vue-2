@@ -36,9 +36,9 @@ const getters = {
     // Комбинируем теги из API и локальных шаблонов
     const localTags = extractUniqueTags(state.templates);
     const apiTags = state.tags
-      .filter((tag) => tag != null) // Фильтруем null/undefined
-      .map((tag) => (typeof tag === "string" ? tag : tag.name || ""))
-      .filter((name) => name); // Убираем пустые строки
+      .filter((tag) => tag != null) // Фильтруем null и undefined
+      .map((tag) => (typeof tag === "string" ? tag : tag.name))
+      .filter((tag) => tag != null); // Фильтруем null и undefined после map
     return [...new Set([...localTags, ...apiTags])];
   },
 
@@ -151,15 +151,6 @@ const mutations = {
 
   SET_PAGINATION(state, pagination) {
     state.pagination = { ...state.pagination, ...pagination };
-  },
-
-  RESET_FILTERS(state) {
-    state.filters = {
-      search: "",
-      tags: [],
-      company_id: null,
-      collection_id: null,
-    };
   },
 };
 
@@ -314,32 +305,22 @@ const actions = {
     commit("SET_ERROR", null);
 
     try {
-      const duplicatedTemplate = await templatesService.duplicateTemplate(
-        templateId
-      );
-      commit("ADD_TEMPLATE", duplicatedTemplate);
-      return duplicatedTemplate;
+      const originalTemplate = await templatesService.getTemplate(templateId);
+      const duplicateData = {
+        ...originalTemplate,
+        name: `${originalTemplate.name} (копия)`,
+        id: undefined, // Убираем ID чтобы создать новый
+      };
+      delete duplicateData.id;
+      delete duplicateData.created_at;
+      delete duplicateData.updated_at;
+
+      const newTemplate = await templatesService.createTemplate(duplicateData);
+      commit("ADD_TEMPLATE", newTemplate);
+      return newTemplate;
     } catch (error) {
       console.error("Duplicate template error:", error);
       commit("SET_ERROR", error.message || "Ошибка дублирования шаблона");
-      throw error;
-    } finally {
-      commit("SET_LOADING", false);
-    }
-  },
-
-  // Переключение публичности шаблона
-  async toggleTemplateVisibility({ commit }, { id, isPublic }) {
-    commit("SET_LOADING", true);
-    commit("SET_ERROR", null);
-
-    try {
-      const updatedTemplate = await templatesService.togglePublic(id, isPublic);
-      commit("UPDATE_TEMPLATE", updatedTemplate);
-      return updatedTemplate;
-    } catch (error) {
-      console.error("Toggle visibility error:", error);
-      commit("SET_ERROR", error.message || "Ошибка изменения видимости");
       throw error;
     } finally {
       commit("SET_LOADING", false);
@@ -370,13 +351,15 @@ const actions = {
   },
 
   // Загрузка файла
-  async uploadFile({ commit }, { file, type = "image" }) {
+  async uploadFile({ commit }, { file }) {
     commit("SET_LOADING", true);
     commit("SET_ERROR", null);
 
     try {
-      const response = await templatesService.uploadFile(file, type);
-      return response;
+      // Здесь должна быть логика загрузки файла на сервер
+      // Пока возвращаем локальный URL для предпросмотра
+      const url = URL.createObjectURL(file);
+      return url;
     } catch (error) {
       console.error("Upload file error:", error);
       commit("SET_ERROR", error.message || "Ошибка загрузки файла");
@@ -386,24 +369,19 @@ const actions = {
     }
   },
 
-  // Установка фильтров
-  setFilters({ commit, dispatch }, filters) {
+  // Обновление фильтров
+  updateFilters({ commit }, filters) {
     commit("SET_FILTERS", filters);
-    commit("SET_PAGINATION", { page: 1 }); // Сбрасываем на первую страницу
-    return dispatch("fetchTemplates");
   },
 
-  // Установка пагинации
-  setPagination({ commit, dispatch }, pagination) {
+  // Обновление пагинации
+  updatePagination({ commit }, pagination) {
     commit("SET_PAGINATION", pagination);
-    return dispatch("fetchTemplates");
   },
 
-  // Сброс фильтров
-  resetFilters({ commit, dispatch }) {
-    commit("RESET_FILTERS");
-    commit("SET_PAGINATION", { page: 1 });
-    return dispatch("fetchTemplates");
+  // Очистка ошибки
+  clearError({ commit }) {
+    commit("SET_ERROR", null);
   },
 
   // Очистка текущего шаблона
@@ -411,22 +389,13 @@ const actions = {
     commit("SET_CURRENT_TEMPLATE", null);
   },
 
-  // Очистка ошибок
-  clearError({ commit }) {
-    commit("SET_ERROR", null);
-  },
-
   // Инициализация - загружает базовые данные
   async initialize({ dispatch }) {
     try {
-      await Promise.all([
-        dispatch("fetchTemplates"),
-        dispatch("fetchCategories"),
-        dispatch("fetchTags"),
-      ]);
+      await Promise.all([dispatch("fetchTemplates"), dispatch("fetchTags")]);
     } catch (error) {
       console.error("Templates initialization error:", error);
-      // Не прерываем инициализацию из-за ошибок
+      // Не блокируем инициализацию из-за ошибок
     }
   },
 };

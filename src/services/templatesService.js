@@ -11,7 +11,7 @@ export const templatesService = {
         requestParams["page[number]"] = params.page;
       }
 
-      // Фильтры
+      // Фильтры согласно API документации
       if (params.company_id) {
         requestParams["filter[company_id]"] = params.company_id;
       }
@@ -20,14 +20,8 @@ export const templatesService = {
         requestParams["filter[collection_id]"] = params.collection_id;
       }
 
-      // Дополнительные параметры если поддерживаются API
-      if (params.search) {
-        requestParams.search = params.search;
-      }
-
-      if (params.tags) {
-        requestParams.tags = params.tags;
-      }
+      // Убираем неподдерживаемые параметры из API запроса
+      // search и tags будут обрабатываться на клиенте
 
       const response = await apiClient.get("/api/v1/canvas_templates", {
         params: requestParams,
@@ -36,7 +30,33 @@ export const templatesService = {
       // Нормализуем ответ для нашего store
       // API может возвращать данные в разных форматах
       const data = response.data.data || response.data;
-      const templates = Array.isArray(data) ? data : [data].filter(Boolean);
+      let templates = Array.isArray(data) ? data : [data].filter(Boolean);
+
+      // Клиентская фильтрация по поисковому запросу
+      if (params.search && params.search.trim()) {
+        const searchQuery = params.search.toLowerCase().trim();
+        templates = templates.filter(
+          (template) =>
+            template.name?.toLowerCase().includes(searchQuery) ||
+            template.description?.toLowerCase().includes(searchQuery) ||
+            (template.tags &&
+              Array.isArray(template.tags) &&
+              template.tags.some((tag) =>
+                tag.toLowerCase().includes(searchQuery)
+              ))
+        );
+      }
+
+      // Клиентская фильтрация по тегам
+      if (params.tags && params.tags.trim()) {
+        const tagsArray = params.tags.split(",").map((tag) => tag.trim());
+        templates = templates.filter(
+          (template) =>
+            template.tags &&
+            Array.isArray(template.tags) &&
+            tagsArray.some((tag) => template.tags.includes(tag))
+        );
+      }
 
       return {
         data: templates,
@@ -138,23 +158,30 @@ export const templatesService = {
       formData.append("height", templateData.height);
       formData.append("objects", JSON.stringify(templateData.objects)); // JSON строка
 
+      // Добавляем _method=PATCH для Laravel method spoofing
+      formData.append("_method", "PATCH");
+
       // Необязательные поля
       if (templateData.description) {
         formData.append("description", templateData.description);
       }
 
-      // Всегда отправляем поле tags
+      // Тип шаблона
+      if (templateData.type) {
+        formData.append("type", templateData.type);
+      }
+
+      // Теги - отправляем как массив
       if (templateData.tags && templateData.tags.length > 0) {
-        // Если есть теги, отправляем каждый тег отдельно
         templateData.tags.forEach((tag) => {
           formData.append("tags[]", tag);
         });
       } else {
-        // Если тегов нет, отправляем пустое значение чтобы поле существовало
+        // Если тегов нет, отправляем null
         formData.append("tags", "");
       }
 
-      // preview_image как файл или удаляем если это base64 строка
+      // preview_image как файл
       if (
         templateData.preview_image &&
         templateData.preview_image instanceof File
@@ -162,7 +189,8 @@ export const templatesService = {
         formData.append("preview_image", templateData.preview_image);
       }
 
-      const response = await apiClient.put(
+      // Отправляем POST запрос с _method=PATCH
+      const response = await apiClient.post(
         `/api/v1/canvas_templates/${id}`,
         formData,
         {
@@ -171,6 +199,7 @@ export const templatesService = {
           },
         }
       );
+
       return response.data.data || response.data;
     } catch (error) {
       console.error("Template update error:", error);
@@ -185,10 +214,28 @@ export const templatesService = {
   // Удаление шаблона
   async deleteTemplate(id) {
     try {
-      const response = await apiClient.delete(`/api/v1/canvas_templates/${id}`);
+      console.log("Deleting template with ID:", id);
+      console.log("DELETE URL:", `/api/v1/canvas_templates`);
+
+      const response = await apiClient.delete("/api/v1/canvas_templates", {
+        data: {
+          id: id,
+        },
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
       return response.data;
     } catch (error) {
       console.error("Template delete error:", error);
+      console.error("Delete request failed for ID:", id);
+      console.error("Error details:", {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        url: error.config?.url,
+        method: error.config?.method,
+      });
       throw new Error(
         error.response?.data?.message ||
           error.response?.data?.error ||
@@ -214,7 +261,7 @@ export const templatesService = {
   // Поиск шаблонов
   async searchTemplates(searchQuery, filters = {}) {
     try {
-      // Пробуем использовать обычный endpoint с search параметром
+      // Теперь поиск обрабатывается в getTemplates на клиенте
       return await this.getTemplates({
         search: searchQuery,
         ...filters,

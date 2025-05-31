@@ -8,8 +8,8 @@
           <p class="page-subtitle">Управление коллекцией шаблонов</p>
         </div>
         <div class="page-actions">
-          <BaseButton variant="primary" @click="$router.push('/template/new')">
-            + Создать шаблон
+          <BaseButton variant="primary" @click="createNewTemplate">
+            Создать шаблон
           </BaseButton>
         </div>
       </div>
@@ -69,7 +69,7 @@
         <div class="empty-content">
           <h3>Пока нет шаблонов</h3>
           <p>Создайте свой первый шаблон, чтобы начать работу</p>
-          <BaseButton variant="primary" @click="$router.push('/template/new')">
+          <BaseButton variant="primary" @click="createNewTemplate">
             Создать шаблон
           </BaseButton>
         </div>
@@ -91,7 +91,7 @@
           :key="template.id"
           :template="template"
           @edit="editTemplate"
-          @delete="deleteTemplate"
+          @delete="handleDeleteTemplate"
         />
       </div>
 
@@ -113,6 +113,7 @@
       v-if="templateToDelete"
       :title="'Удалить шаблон?'"
       :message="`Вы уверены, что хотите удалить шаблон «${templateToDelete.name}»? Это действие нельзя отменить.`"
+      :loading="isDeleting"
       @confirm="confirmDelete"
       @cancel="cancelDelete"
     />
@@ -143,6 +144,7 @@ export default {
       selectedTags: [],
       currentPage: 1,
       templateToDelete: null,
+      isDeleting: false,
     };
   },
 
@@ -197,11 +199,11 @@ export default {
   },
 
   methods: {
-    ...mapActions("templates", [
-      "initialize",
-      "fetchTemplates",
-      "deleteTemplate",
-    ]),
+    ...mapActions("templates", {
+      initialize: "initialize",
+      fetchTemplates: "fetchTemplates",
+      deleteTemplateFromStore: "deleteTemplate", // Псевдоним для избежания конфликта
+    }),
 
     debouncedSearch: debounce(function () {
       // Поиск с задержкой для оптимизации
@@ -227,14 +229,15 @@ export default {
       this.$router.push(`/template/${template.id}`);
     },
 
-    deleteTemplate(template) {
+    handleDeleteTemplate(template) {
       this.templateToDelete = template;
     },
 
     async confirmDelete() {
-      if (this.templateToDelete) {
+      if (this.templateToDelete && !this.isDeleting) {
+        this.isDeleting = true;
         try {
-          await this.deleteTemplate(this.templateToDelete.id);
+          await this.deleteTemplateFromStore(this.templateToDelete.id);
           this.$root.$emit("show-toast", {
             title: "Успешно!",
             message: `Шаблон "${this.templateToDelete.name}" удален`,
@@ -248,16 +251,40 @@ export default {
             message: error.message || "Не удалось удалить шаблон",
             variant: "error",
           });
+        } finally {
+          this.isDeleting = false;
         }
       }
     },
 
     cancelDelete() {
+      // Не позволяем закрыть модальное окно во время удаления
+      if (this.isDeleting) {
+        return;
+      }
       this.templateToDelete = null;
     },
 
     changePage(page) {
       this.currentPage = page;
+    },
+
+    createNewTemplate() {
+      // Check if we're already on the target route to prevent unnecessary navigation
+      if (this.$route.path === "/template/new") {
+        return;
+      }
+
+      // Navigate to create template page with error handling
+      this.$router.push("/template/new").catch((err) => {
+        // Ignore navigation cancelled errors (these are harmless)
+        if (
+          err.name !== "NavigationCancelled" &&
+          err.name !== "NavigationDuplicated"
+        ) {
+          console.error("Navigation error:", err);
+        }
+      });
     },
   },
 };

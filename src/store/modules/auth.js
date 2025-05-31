@@ -54,24 +54,35 @@ const actions = {
     commit("SET_LOADING", true);
 
     try {
+      // Инициализируем токен из localStorage
       authService.initializeAuth();
 
+      // Проверяем, есть ли валидный токен
       if (authService.isAuthenticated()) {
-        const userData = await authService.validateToken();
-        commit("SET_AUTH_DATA", {
-          user: userData.user,
-          token: authService.getToken(),
-        });
-        return true;
+        try {
+          const userData = await authService.validateToken();
+          commit("SET_AUTH_DATA", {
+            user: userData.user,
+            token: authService.getToken(),
+          });
+          return true;
+        } catch (error) {
+          console.error("Token validation failed:", error);
+          await dispatch("logout");
+          return false;
+        }
+      } else {
+        // Если токена нет, очищаем состояние
+        commit("CLEAR_AUTH_DATA");
+        return false;
       }
     } catch (error) {
       console.error("Auth initialization failed:", error);
       await dispatch("logout");
+      return false;
     } finally {
       commit("SET_LOADING", false);
     }
-
-    return false;
   },
 
   async login({ commit }, credentials) {

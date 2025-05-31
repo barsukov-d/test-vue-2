@@ -53,29 +53,29 @@ const router = new VueRouter({
 router.beforeEach(async (to, from, next) => {
   const requiresAuth = to.matched.some((record) => record.meta.requiresAuth);
   const isGuestRoute = to.matched.some((record) => record.meta.guest);
-  const isAuthenticated = store.getters["auth/isAuthenticated"];
 
-  // Проверяем валидность токена при необходимости
-  if (store.getters["auth/token"] && !isAuthenticated) {
+  // Сначала получаем текущее состояние аутентификации
+  let isAuthenticated = store.getters["auth/isAuthenticated"];
+
+  // Если пользователь не аутентифицирован в store, но возможно есть токен в localStorage
+  if (!isAuthenticated) {
     try {
-      await store.dispatch("auth/validateToken");
+      // Пытаемся инициализировать auth из localStorage
+      const authInitialized = await store.dispatch("auth/initializeAuth");
+      isAuthenticated = authInitialized;
     } catch (error) {
-      console.error("Token validation failed:", error);
-      // Токен невалидный, очищаем состояние
-      await store.dispatch("auth/logout");
+      console.error("Auth initialization failed in router:", error);
+      isAuthenticated = false;
     }
   }
 
-  // Получаем обновленное состояние авторизации
-  const currentlyAuthenticated = store.getters["auth/isAuthenticated"];
-
-  if (requiresAuth && !currentlyAuthenticated) {
+  if (requiresAuth && !isAuthenticated) {
     // Перенаправляем на логин если нужна авторизация
     next({
       name: "login",
       query: { redirect: to.fullPath },
     });
-  } else if (isGuestRoute && currentlyAuthenticated) {
+  } else if (isGuestRoute && isAuthenticated) {
     // Перенаправляем авторизованных пользователей с гостевых страниц
     const redirectPath = to.query.redirect || "/";
     next(redirectPath);

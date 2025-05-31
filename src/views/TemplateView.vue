@@ -16,6 +16,14 @@
         </div>
         <div class="page-actions" v-if="!readonly">
           <BaseButton
+            v-if="isEdit"
+            variant="outline-danger"
+            @click="handleDeleteTemplate"
+            :disabled="isLoading"
+          >
+            Удалить
+          </BaseButton>
+          <BaseButton
             variant="secondary"
             @click="handleCancel"
             :disabled="isLoading"
@@ -202,7 +210,7 @@
                   v-if="!readonly"
                   variant="outline-primary"
                   size="small"
-                  @click="$refs.fileInput.click()"
+                  @click="triggerFileSelect"
                   class="upload-button"
                 >
                   Загрузить изображение
@@ -245,6 +253,16 @@
         </div>
       </div>
     </div>
+
+    <!-- Модальное окно подтверждения удаления -->
+    <ConfirmDialog
+      v-if="showDeleteConfirm"
+      :title="'Удалить шаблон?'"
+      :message="`Вы уверены, что хотите удалить шаблон «${template?.name}»? Это действие нельзя отменить.`"
+      :loading="isDeleting"
+      @confirm="confirmDelete"
+      @cancel="cancelDelete"
+    />
   </div>
 </template>
 
@@ -252,6 +270,7 @@
 import { mapGetters, mapActions } from "vuex";
 import BaseButton from "@/components/ui/BaseButton.vue";
 import BaseInput from "@/components/ui/BaseInput.vue";
+import ConfirmDialog from "@/components/ui/ConfirmDialog.vue";
 
 export default {
   name: "TemplateView",
@@ -259,6 +278,7 @@ export default {
   components: {
     BaseButton,
     BaseInput,
+    ConfirmDialog,
   },
 
   props: {
@@ -288,6 +308,9 @@ export default {
       newTag: "",
       uploadingFile: false,
       selectedFile: null,
+      showDeleteConfirm: false,
+      isDeleting: false,
+      lastFileSelectClick: 0,
     };
   },
 
@@ -327,13 +350,14 @@ export default {
   },
 
   methods: {
-    ...mapActions("templates", [
-      "fetchTemplate",
-      "createTemplate",
-      "updateTemplate",
-      "uploadFile",
-      "clearCurrentTemplate",
-    ]),
+    ...mapActions("templates", {
+      fetchTemplate: "fetchTemplate",
+      createTemplate: "createTemplate",
+      updateTemplate: "updateTemplate",
+      deleteTemplateFromStore: "deleteTemplate",
+      uploadFile: "uploadFile",
+      clearCurrentTemplate: "clearCurrentTemplate",
+    }),
 
     async loadTemplate() {
       if (!this.id) return;
@@ -412,29 +436,80 @@ export default {
       this.form.tags.splice(index, 1);
     },
 
-    async handleFileUpload(event) {
-      const file = event.target.files[0];
-      if (!file) return;
+    triggerFileSelect() {
+      const now = Date.now();
 
-      // Проверяем размер файла (макс 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        this.$root.$emit("show-toast", {
-          title: "Ошибка",
-          message: "Размер файла не должен превышать 5MB",
-          variant: "error",
-        });
+      // Prevent multiple file dialogs from opening
+      if (this.uploadingFile) {
         return;
       }
 
-      // Сохраняем файл для отправки
-      this.selectedFile = file;
+      // Защита от двойных кликов (500ms cooldown)
+      if (now - this.lastFileSelectClick < 500) {
+        return;
+      }
 
-      // Создаем URL для предпросмотра
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        this.form.preview_image = e.target.result;
-      };
-      reader.readAsDataURL(file);
+      this.lastFileSelectClick = now;
+
+      if (this.$refs.fileInput) {
+        this.$refs.fileInput.click();
+      }
+    },
+
+    async handleFileUpload(event) {
+      // Prevent multiple uploads at the same time
+      if (this.uploadingFile) {
+        return;
+      }
+
+      const file = event.target.files[0];
+      if (!file) {
+        this.uploadingFile = false;
+        return;
+      }
+
+      this.uploadingFile = true;
+
+      try {
+        // Проверяем размер файла (макс 5MB)
+        if (file.size > 5 * 1024 * 1024) {
+          this.$root.$emit("show-toast", {
+            title: "Ошибка",
+            message: "Размер файла не должен превышать 5MB",
+            variant: "error",
+          });
+          return;
+        }
+
+        // Сохраняем файл для отправки
+        this.selectedFile = file;
+
+        // Создаем URL для предпросмотра и ждем завершения
+        await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            this.form.preview_image = e.target.result;
+            resolve();
+          };
+          reader.onerror = () => {
+            reject(new Error("Ошибка чтения файла"));
+          };
+          reader.readAsDataURL(file);
+        });
+      } catch (error) {
+        console.error("File upload error:", error);
+        this.$root.$emit("show-toast", {
+          title: "Ошибка",
+          message: "Не удалось загрузить файл",
+          variant: "error",
+        });
+      } finally {
+        // Очищаем input для возможности выбора того же файла снова
+        if (this.$refs.fileInput) {
+          this.$refs.fileInput.value = "";
+        }
+        this.uploadingFile = false;
+      }
     },
 
     removePreviewImage() {
@@ -553,6 +628,47 @@ export default {
             }
           }
           break;
+      }
+    },
+
+    async handleDeleteTemplate() {
+      this.showDeleteConfirm = true;
+    },
+
+    confirmDelete() {
+      this.performDeleteTemplate();
+    },
+
+    cancelDelete() {
+      // Не позволяем закрыть модальное окно во время удаления
+      if (this.isDeleting) {
+        return;
+      }
+      this.showDeleteConfirm = false;
+    },
+
+    async performDeleteTemplate() {
+      if (!this.id || this.isDeleting) return;
+
+      this.isDeleting = true;
+      try {
+        await this.deleteTemplateFromStore(this.id);
+        this.showDeleteConfirm = false;
+        this.$root.$emit("show-toast", {
+          title: "Успешно!",
+          message: "Шаблон удален",
+          variant: "success",
+        });
+        this.$router.push("/");
+      } catch (error) {
+        console.error("Error deleting template:", error);
+        this.$root.$emit("show-toast", {
+          title: "Ошибка",
+          message: error.message || "Не удалось удалить шаблон",
+          variant: "error",
+        });
+      } finally {
+        this.isDeleting = false;
       }
     },
   },

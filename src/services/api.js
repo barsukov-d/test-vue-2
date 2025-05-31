@@ -13,7 +13,7 @@ const apiClient = axios.create({
 // Interceptor для добавления токена авторизации к запросам
 apiClient.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem("auth_token");
+    const token = sessionStorage.getItem("auth_token");
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -32,7 +32,7 @@ apiClient.interceptors.response.use(
   (error) => {
     // Обработка ошибки 401 (неавторизован)
     if (error.response?.status === 401) {
-      localStorage.removeItem("auth_token");
+      sessionStorage.removeItem("auth_token");
 
       // Перенаправляем на страницу логина только если мы не на ней
       if (window.location.pathname !== "/login") {
