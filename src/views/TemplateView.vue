@@ -71,7 +71,7 @@
                 >
                   <BaseInput
                     v-model="form.name"
-                    label="Название шаблона"
+                    label="Название шаблона*"
                     placeholder="Введите название шаблона"
                     :error="errors[0]"
                     :disabled="readonly"
@@ -99,7 +99,7 @@
                   >
                     <BaseInput
                       v-model="form.width"
-                      label="Ширина"
+                      label="Ширина*"
                       placeholder="1920px"
                       :error="errors[0]"
                       :disabled="readonly"
@@ -114,7 +114,7 @@
                   >
                     <BaseInput
                       v-model="form.height"
-                      label="Высота"
+                      label="Высота*"
                       placeholder="1080px"
                       :error="errors[0]"
                       :disabled="readonly"
@@ -160,7 +160,7 @@
                   name="objectsJson"
                   rules="required|json_format"
                 >
-                  <label class="form-label">Объекты шаблона (JSON)</label>
+                  <label class="form-label">Объекты шаблона (JSON)*</label>
                   <textarea
                     v-model="form.objectsJson"
                     class="form-textarea code-textarea"

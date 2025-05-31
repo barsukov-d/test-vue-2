@@ -14,7 +14,7 @@
             <router-link to="/" class="nav-link">
               <span>Шаблоны</span>
             </router-link>
-            <router-link to="/template/new" class="nav-link nav-link--primary">
+            <router-link to="/template/new" class="nav-link">
               <span>+ Создать</span>
             </router-link>
           </nav>
@@ -178,23 +178,21 @@ body {
   text-decoration: none;
   color: $text-primary;
   font-weight: 500;
+  background-color: $bg-secondary;
   transition: all 0.2s ease;
 
   &:hover {
-    background-color: $bg-secondary;
+    background-color: rgba($primary-color, 0.1);
+    color: $primary-color;
   }
 
-  &.router-link-active {
-    background-color: $primary-color;
-    color: $white;
-  }
-
-  &--primary {
+  &.router-link-exact-active {
     background-color: $primary-color;
     color: $white;
 
     &:hover {
       background-color: $primary-dark;
+      color: $white;
     }
   }
 }
