@@ -4,10 +4,17 @@
       <!-- Заголовок и действия -->
       <div class="page-header">
         <div class="page-title">
-          <h1>Шаблоны</h1>
+          <h1 @click="refreshTemplates" class="clickable-title">Шаблоны</h1>
           <p class="page-subtitle">Управление коллекцией шаблонов</p>
         </div>
         <div class="page-actions">
+          <BaseButton
+            variant="outline-secondary"
+            @click="refreshTemplates"
+            size="small"
+          >
+            🔄 Обновить
+          </BaseButton>
           <BaseButton variant="primary" @click="createNewTemplate">
             Создать шаблон
           </BaseButton>
@@ -56,7 +63,7 @@
       <!-- Ошибка загрузки -->
       <div v-else-if="error" class="error-state">
         <p class="error-message">{{ error }}</p>
-        <BaseButton @click="fetchTemplates" variant="secondary">
+        <BaseButton @click="refreshTemplates" variant="secondary">
           Повторить
         </BaseButton>
       </div>
@@ -93,18 +100,6 @@
           @edit="editTemplate"
           @delete="handleDeleteTemplate"
         />
-      </div>
-
-      <!-- Пагинация (если нужна) -->
-      <div v-if="totalPages > 1" class="pagination">
-        <BaseButton
-          v-for="page in totalPages"
-          :key="page"
-          :variant="page === currentPage ? 'primary' : 'secondary'"
-          @click="changePage(page)"
-        >
-          {{ page }}
-        </BaseButton>
       </div>
     </div>
 
@@ -182,11 +177,6 @@ export default {
 
       return filtered;
     },
-
-    totalPages() {
-      // Простая пагинация, можно расширить
-      return Math.ceil(this.filteredTemplates.length / 12);
-    },
   },
 
   async mounted() {
@@ -195,6 +185,15 @@ export default {
       await this.initialize();
     } catch (error) {
       console.error("Error initializing templates:", error);
+    }
+  },
+
+  async activated() {
+    // Обновляем список шаблонов каждый раз при возврате на страницу
+    try {
+      await this.fetchTemplates();
+    } catch (error) {
+      console.error("Error refreshing templates:", error);
     }
   },
 
@@ -244,6 +243,9 @@ export default {
             variant: "success",
           });
           this.templateToDelete = null;
+
+          // Обновляем список шаблонов после удаления
+          await this.fetchTemplates();
         } catch (error) {
           console.error("Error deleting template:", error);
           this.$root.$emit("show-toast", {
@@ -286,6 +288,18 @@ export default {
         }
       });
     },
+
+    refreshTemplates() {
+      // Принудительно обновляем список шаблонов
+      this.fetchTemplates().catch((error) => {
+        console.error("Error refreshing templates:", error);
+        this.$root.$emit("show-toast", {
+          title: "Ошибка",
+          message: "Не удалось обновить список шаблонов",
+          variant: "error",
+        });
+      });
+    },
   },
 };
 </script>
@@ -312,6 +326,15 @@ export default {
     font-weight: 700;
     color: $text-primary;
   }
+
+  .clickable-title {
+    cursor: pointer;
+    transition: color 0.2s ease;
+
+    &:hover {
+      color: $primary-color;
+    }
+  }
 }
 
 .page-subtitle {
@@ -322,6 +345,8 @@ export default {
 
 .page-actions {
   flex-shrink: 0;
+  display: flex;
+  gap: 1rem;
 }
 
 .filters-section {

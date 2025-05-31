@@ -14,6 +14,9 @@ importers:
       core-js:
         specifier: ^3.8.3
         version: 3.42.0
+      vee-validate:
+        specifier: '3'
+        version: 3.4.15(vue@2.7.16)
       vue:
         specifier: ^2.6.14
         version: 2.7.16
@@ -3735,6 +3738,11 @@ packages:
   vary@1.1.2:
     resolution: {integrity: sha512-BNGbWLfd0eUPabhkXUVm0j8uuvREyTh5ovRa/dyow/BqAbZJyC+5fU+IzQOzmAKzYqYRAISoRhdQr3eIZ/PXqg==}
     engines: {node: '>= 0.8'}
+
+  vee-validate@3.4.15:
+    resolution: {integrity: sha512-qEtvq9X2N7l5pjBe/6YGrrIBHxJA4KTrb3QrER3qzM7fzkH730m8LyVWMIzM47l//618nlUa7VvTdMFTRKr8tQ==}
+    peerDependencies:
+      vue: ^2.5.18
 
   vue-eslint-parser@8.3.0:
     resolution: {integrity: sha512-dzHGG3+sYwSf6zFBa0Gi9ZDshD7+ad14DGOdTLjruRVgZXe2J+DcZ9iUhyR48z5g1PqRa20yt3Njna/veLJL/g==}
@@ -7957,6 +7965,10 @@ snapshots:
       spdx-expression-parse: 3.0.1
 
   vary@1.1.2: {}
+
+  vee-validate@3.4.15(vue@2.7.16):
+    dependencies:
+      vue: 2.7.16
 
   vue-eslint-parser@8.3.0(eslint@7.32.0):
     dependencies:

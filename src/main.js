@@ -3,6 +3,7 @@ import Vuex from "vuex";
 import App from "./App.vue";
 import router from "./router";
 import store from "./store";
+import "./plugins/vee-validate";
 
 Vue.use(Vuex);
 

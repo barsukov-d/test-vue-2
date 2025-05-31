@@ -7,69 +7,83 @@
           <p class="login-subtitle">Войдите в систему для продолжения</p>
         </div>
 
-        <form @submit.prevent="handleLogin" class="login-form">
-          <div class="form-group">
-            <BaseInput
-              v-model="form.email"
-              type="email"
-              label="Email"
-              placeholder="Введите ваш email"
-              :error="errors.email"
-              :disabled="isLoading"
-              autofocus
-              required
-            />
-          </div>
+        <ValidationObserver v-slot="{ handleSubmit, invalid }" ref="observer">
+          <form @submit.prevent="handleSubmit(handleLogin)" class="login-form">
+            <div class="form-group">
+              <ValidationProvider
+                v-slot="{ errors, classes }"
+                name="email"
+                rules="required|email"
+              >
+                <BaseInput
+                  v-model="credentials.email"
+                  type="email"
+                  label="Email"
+                  placeholder="Введите ваш email"
+                  :error="errors[0]"
+                  :class="classes"
+                  :disabled="isLoading"
+                  autofocus
+                />
+              </ValidationProvider>
+            </div>
 
-          <div class="form-group">
-            <BaseInput
-              v-model="form.password"
-              type="password"
-              label="Пароль"
-              placeholder="Введите пароль"
-              :error="errors.password"
-              :disabled="isLoading"
-              required
-            />
-          </div>
+            <div class="form-group">
+              <ValidationProvider
+                v-slot="{ errors, classes }"
+                name="password"
+                rules="required|min:6"
+              >
+                <BaseInput
+                  v-model="credentials.password"
+                  type="password"
+                  label="Пароль"
+                  placeholder="Введите пароль"
+                  :error="errors[0]"
+                  :class="classes"
+                  :disabled="isLoading"
+                />
+              </ValidationProvider>
+            </div>
 
-          <!-- Общая ошибка -->
-          <div v-if="error" class="error-message">
-            {{ error }}
-          </div>
+            <!-- Общая ошибка -->
+            <div v-if="error" class="error-message">
+              {{ error }}
+            </div>
 
-          <!-- Успешное сообщение -->
-          <div v-if="successMessage" class="success-message">
-            {{ successMessage }}
-          </div>
+            <!-- Успешное сообщение -->
+            <div v-if="successMessage" class="success-message">
+              {{ successMessage }}
+            </div>
 
-          <BaseButton
-            type="submit"
-            variant="primary"
-            size="large"
-            :loading="isLoading"
-            :disabled="!isFormValid"
-            full-width
-          >
-            Войти
-          </BaseButton>
-
-          <!-- Демо данные -->
-          <div class="demo-credentials">
-            <h4>Демо-данные для входа:</h4>
-            <p><strong>Email:</strong> hello@aiscreen.io</p>
-            <p><strong>Пароль:</strong> Demo!1234</p>
             <BaseButton
-              type="button"
-              variant="outline-secondary"
-              size="small"
-              @click="fillDemoCredentials"
-              :disabled="isLoading"
+              type="submit"
+              variant="primary"
+              size="large"
+              :loading="isLoading"
+              :disabled="invalid"
+              full-width
             >
-              Заполнить демо-данными
+              Войти
             </BaseButton>
-          </div>
-        </form>
+
+            <!-- Демо данные -->
+            <div class="demo-credentials">
+              <h4>Демо-данные для входа:</h4>
+              <p><strong>Email:</strong> hello@aiscreen.io</p>
+              <p><strong>Пароль:</strong> Demo!1234</p>
+              <BaseButton
+                type="button"
+                variant="outline-secondary"
+                size="small"
+                @click="fillDemoCredentials"
+                :disabled="isLoading"
+              >
+                Заполнить демо-данными
+              </BaseButton>
+            </div>
+          </form>
+        </ValidationObserver>
       </div>
     </div>
   </div>
@@ -77,25 +91,20 @@
 
 <script>
 import { mapGetters, mapActions } from "vuex";
-import { validateLoginForm } from "@/utils/validation";
-import BaseInput from "@/components/ui/BaseInput.vue";
 import BaseButton from "@/components/ui/BaseButton.vue";
+import BaseInput from "@/components/ui/BaseInput.vue";
 
 export default {
   name: "LoginView",
 
   components: {
-    BaseInput,
     BaseButton,
+    BaseInput,
   },
 
   data() {
     return {
-      form: {
-        email: "",
-        password: "",
-      },
-      errors: {
+      credentials: {
         email: "",
         password: "",
       },
@@ -106,11 +115,6 @@ export default {
 
   computed: {
     ...mapGetters("auth", ["isLoading"]),
-
-    isFormValid() {
-      const validation = validateLoginForm(this.form);
-      return validation.isValid && this.form.email && this.form.password;
-    },
   },
 
   mounted() {
@@ -126,30 +130,14 @@ export default {
   methods: {
     ...mapActions("auth", ["login"]),
 
-    validateField(fieldName) {
-      const validation = validateLoginForm(this.form);
-      this.errors[fieldName] = validation.errors[fieldName] || "";
-    },
-
-    validateForm() {
-      const validation = validateLoginForm(this.form);
-      this.errors = { ...validation.errors };
-      return validation.isValid;
-    },
-
     async handleLogin() {
       this.error = "";
       this.successMessage = "";
 
-      // Валидация формы
-      if (!this.validateForm()) {
-        return;
-      }
-
       try {
         await this.login({
-          email: this.form.email.trim(),
-          password: this.form.password,
+          email: this.credentials.email.trim(),
+          password: this.credentials.password,
         });
 
         this.successMessage = "Авторизация прошла успешно!";
@@ -167,9 +155,12 @@ export default {
 
     // Метод для быстрого заполнения демо-данными
     fillDemoCredentials() {
-      this.form.email = "hello@aiscreen.io";
-      this.form.password = "Demo!1234";
-      this.errors = { email: "", password: "" };
+      this.credentials.email = "hello@aiscreen.io";
+      this.credentials.password = "Demo!1234";
+      // Сбрасываем валидацию после заполнения
+      this.$nextTick(() => {
+        this.$refs.observer.reset();
+      });
     },
   },
 };

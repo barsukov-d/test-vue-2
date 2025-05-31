@@ -20,11 +20,5 @@ export default new Vuex.Store({
       version: state.version,
     }),
   },
-  mutations: {
-    // Пока не используются
-  },
-  actions: {
-    // Пока не используются
-  },
   strict: process.env.NODE_ENV !== "production",
 });

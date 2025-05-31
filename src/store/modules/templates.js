@@ -5,28 +5,15 @@ import { extractUniqueTags } from "@/utils/helpers";
 const state = {
   templates: [],
   currentTemplate: null,
-  categories: [],
   tags: [],
   isLoading: false,
   error: null,
-  filters: {
-    search: "",
-    tags: [],
-    company_id: null,
-    collection_id: null,
-  },
-  pagination: {
-    page: 1,
-    limit: 12,
-    total: 0,
-  },
 };
 
 // Getters
 const getters = {
   templates: (state) => state.templates,
   currentTemplate: (state) => state.currentTemplate,
-  categories: (state) => state.categories,
   tags: (state) => state.tags,
   isLoading: (state) => state.isLoading,
   error: (state) => state.error,
@@ -40,50 +27,6 @@ const getters = {
       .map((tag) => (typeof tag === "string" ? tag : tag.name))
       .filter((tag) => tag != null); // Фильтруем null и undefined после map
     return [...new Set([...localTags, ...apiTags])];
-  },
-
-  // Фильтрованные шаблоны (только для клиентской фильтрации)
-  filteredTemplates: (state) => {
-    let filtered = [...state.templates];
-
-    // Локальная фильтрация применяется только если есть данные
-    if (state.filters.search) {
-      const query = state.filters.search.toLowerCase();
-      filtered = filtered.filter(
-        (template) =>
-          template.name?.toLowerCase().includes(query) ||
-          template.description?.toLowerCase().includes(query) ||
-          template.tags?.some((tag) => tag.toLowerCase().includes(query))
-      );
-    }
-
-    return filtered;
-  },
-
-  // Статистика
-  templateStats: (state) => {
-    const total = state.templates.length;
-    const published = state.templates.filter(
-      (t) => t.is_public === true
-    ).length;
-    const privateTemplates = state.templates.filter(
-      (t) => t.is_public === false
-    ).length;
-
-    return { total, published, private: privateTemplates };
-  },
-
-  // Пагинация
-  totalPages: (state) => {
-    return Math.ceil(state.pagination.total / state.pagination.limit);
-  },
-
-  hasNextPage: (state, getters) => {
-    return state.pagination.page < getters.totalPages;
-  },
-
-  hasPrevPage: (state) => {
-    return state.pagination.page > 1;
   },
 };
 
@@ -103,10 +46,6 @@ const mutations = {
 
   SET_CURRENT_TEMPLATE(state, template) {
     state.currentTemplate = template;
-  },
-
-  SET_CATEGORIES(state, categories) {
-    state.categories = Array.isArray(categories) ? categories : [];
   },
 
   SET_TAGS(state, tags) {
@@ -144,52 +83,18 @@ const mutations = {
       state.currentTemplate = null;
     }
   },
-
-  SET_FILTERS(state, filters) {
-    state.filters = { ...state.filters, ...filters };
-  },
-
-  SET_PAGINATION(state, pagination) {
-    state.pagination = { ...state.pagination, ...pagination };
-  },
 };
 
 // Actions
 const actions = {
   // Загрузка всех шаблонов
-  async fetchTemplates({ commit, state }) {
+  async fetchTemplates({ commit }) {
     commit("SET_LOADING", true);
     commit("SET_ERROR", null);
 
     try {
-      const params = {
-        page: state.pagination.page,
-        limit: state.pagination.limit,
-        search: state.filters.search || undefined,
-        tags:
-          state.filters.tags.length > 0
-            ? state.filters.tags.join(",")
-            : undefined,
-        company_id: state.filters.company_id || undefined,
-        collection_id: state.filters.collection_id || undefined,
-      };
-
-      // Удаляем undefined значения
-      Object.keys(params).forEach((key) => {
-        if (params[key] === undefined) {
-          delete params[key];
-        }
-      });
-
-      const response = await templatesService.getTemplates(params);
-
+      const response = await templatesService.getTemplates();
       commit("SET_TEMPLATES", response.data);
-      commit("SET_PAGINATION", {
-        total: response.total,
-        page: response.page,
-        limit: response.limit,
-      });
-
       return response;
     } catch (error) {
       console.error("Fetch templates error:", error);
@@ -197,19 +102,6 @@ const actions = {
       throw error;
     } finally {
       commit("SET_LOADING", false);
-    }
-  },
-
-  // Загрузка категорий
-  async fetchCategories({ commit }) {
-    try {
-      const categories = await templatesService.getCategories();
-      commit("SET_CATEGORIES", categories);
-      return categories;
-    } catch (error) {
-      console.error("Fetch categories error:", error);
-      // Не показываем ошибку пользователю для категорий
-      return [];
     }
   },
 
@@ -299,65 +191,13 @@ const actions = {
     }
   },
 
-  // Дублирование шаблона
-  async duplicateTemplate({ commit }, templateId) {
-    commit("SET_LOADING", true);
-    commit("SET_ERROR", null);
-
-    try {
-      const originalTemplate = await templatesService.getTemplate(templateId);
-      const duplicateData = {
-        ...originalTemplate,
-        name: `${originalTemplate.name} (копия)`,
-        id: undefined, // Убираем ID чтобы создать новый
-      };
-      delete duplicateData.id;
-      delete duplicateData.created_at;
-      delete duplicateData.updated_at;
-
-      const newTemplate = await templatesService.createTemplate(duplicateData);
-      commit("ADD_TEMPLATE", newTemplate);
-      return newTemplate;
-    } catch (error) {
-      console.error("Duplicate template error:", error);
-      commit("SET_ERROR", error.message || "Ошибка дублирования шаблона");
-      throw error;
-    } finally {
-      commit("SET_LOADING", false);
-    }
-  },
-
-  // Поиск шаблонов
-  async searchTemplates({ commit }, { query, filters = {} }) {
-    commit("SET_LOADING", true);
-    commit("SET_ERROR", null);
-
-    try {
-      const response = await templatesService.searchTemplates(query, filters);
-      commit("SET_TEMPLATES", response.data);
-      commit("SET_PAGINATION", {
-        total: response.total,
-        page: 1,
-        limit: 12,
-      });
-      return response;
-    } catch (error) {
-      console.error("Search templates error:", error);
-      commit("SET_ERROR", error.message || "Ошибка поиска шаблонов");
-      throw error;
-    } finally {
-      commit("SET_LOADING", false);
-    }
-  },
-
   // Загрузка файла
   async uploadFile({ commit }, { file }) {
     commit("SET_LOADING", true);
     commit("SET_ERROR", null);
 
     try {
-      // Здесь должна быть логика загрузки файла на сервер
-      // Пока возвращаем локальный URL для предпросмотра
+      // Возвращаем локальный URL для предпросмотра
       const url = URL.createObjectURL(file);
       return url;
     } catch (error) {
@@ -367,21 +207,6 @@ const actions = {
     } finally {
       commit("SET_LOADING", false);
     }
-  },
-
-  // Обновление фильтров
-  updateFilters({ commit }, filters) {
-    commit("SET_FILTERS", filters);
-  },
-
-  // Обновление пагинации
-  updatePagination({ commit }, pagination) {
-    commit("SET_PAGINATION", pagination);
-  },
-
-  // Очистка ошибки
-  clearError({ commit }) {
-    commit("SET_ERROR", null);
   },
 
   // Очистка текущего шаблона

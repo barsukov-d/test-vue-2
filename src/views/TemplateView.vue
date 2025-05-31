@@ -57,200 +57,211 @@
 
       <!-- Форма шаблона -->
       <div v-else class="template-form">
-        <div class="form-grid">
-          <!-- Левая колонка - основная информация -->
-          <div class="form-section">
-            <h3>Основная информация</h3>
+        <ValidationObserver ref="observer">
+          <div class="form-grid">
+            <!-- Левая колонка - основная информация -->
+            <div class="form-section">
+              <h3>Основная информация</h3>
 
-            <div class="form-group">
-              <BaseInput
-                v-model="form.name"
-                label="Название шаблона"
-                placeholder="Введите название шаблона"
-                :error="errors.name"
-                :disabled="readonly"
-                required
-                @blur="validateField('name')"
-              />
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">Описание</label>
-              <textarea
-                v-model="form.description"
-                class="form-textarea"
-                placeholder="Введите описание шаблона (необязательно)"
-                :disabled="readonly"
-                rows="4"
-              ></textarea>
-            </div>
-
-            <div class="form-row">
               <div class="form-group">
-                <BaseInput
-                  v-model="form.width"
-                  label="Ширина"
-                  placeholder="1920px"
-                  :error="errors.width"
-                  :disabled="readonly"
-                  required
-                  @blur="validateField('width')"
-                />
+                <ValidationProvider
+                  v-slot="{ errors }"
+                  name="name"
+                  rules="required"
+                >
+                  <BaseInput
+                    v-model="form.name"
+                    label="Название шаблона"
+                    placeholder="Введите название шаблона"
+                    :error="errors[0]"
+                    :disabled="readonly"
+                  />
+                </ValidationProvider>
               </div>
+
               <div class="form-group">
-                <BaseInput
-                  v-model="form.height"
-                  label="Высота"
-                  placeholder="1080px"
-                  :error="errors.height"
+                <label class="form-label">Описание</label>
+                <textarea
+                  v-model="form.description"
+                  class="form-textarea"
+                  placeholder="Введите описание шаблона (необязательно)"
                   :disabled="readonly"
-                  required
-                  @blur="validateField('height')"
-                />
+                  rows="4"
+                ></textarea>
               </div>
-            </div>
 
-            <div class="form-group">
-              <label class="form-label">Тип шаблона</label>
-              <select
-                v-model="form.type"
-                :disabled="readonly"
-                class="form-select"
-              >
-                <option value="own">Собственный</option>
-                <option value="shared">Общий</option>
-              </select>
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">Теги</label>
-              <div class="tags-input">
-                <div class="selected-tags">
-                  <span
-                    v-for="(tag, index) in form.tags"
-                    :key="index"
-                    class="tag"
+              <div class="form-row">
+                <div class="form-group">
+                  <ValidationProvider
+                    v-slot="{ errors }"
+                    name="width"
+                    rules="required|pixel_format"
                   >
-                    {{ tag }}
-                    <button
-                      v-if="!readonly"
-                      @click="removeTag(index)"
-                      class="tag-remove"
-                      type="button"
-                    >
-                      ×
-                    </button>
-                  </span>
+                    <BaseInput
+                      v-model="form.width"
+                      label="Ширина"
+                      placeholder="1920px"
+                      :error="errors[0]"
+                      :disabled="readonly"
+                    />
+                  </ValidationProvider>
                 </div>
+                <div class="form-group">
+                  <ValidationProvider
+                    v-slot="{ errors }"
+                    name="height"
+                    rules="required|pixel_format"
+                  >
+                    <BaseInput
+                      v-model="form.height"
+                      label="Высота"
+                      placeholder="1080px"
+                      :error="errors[0]"
+                      :disabled="readonly"
+                    />
+                  </ValidationProvider>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Теги</label>
+                <div class="tags-input">
+                  <div class="selected-tags">
+                    <span
+                      v-for="(tag, index) in form.tags"
+                      :key="index"
+                      class="tag"
+                    >
+                      {{ tag }}
+                      <button
+                        v-if="!readonly"
+                        @click="removeTag(index)"
+                        class="tag-remove"
+                        type="button"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  </div>
+                  <input
+                    v-if="!readonly"
+                    v-model="newTag"
+                    @keydown.enter.prevent="addTag"
+                    @keydown="handleTagInput"
+                    placeholder="Добавить тег (Enter или запятая)"
+                    class="tag-input"
+                  />
+                </div>
+              </div>
+
+              <div class="form-group">
+                <ValidationProvider
+                  v-slot="{ errors }"
+                  name="objectsJson"
+                  rules="required|json_format"
+                >
+                  <label class="form-label">Объекты шаблона (JSON)</label>
+                  <textarea
+                    v-model="form.objectsJson"
+                    class="form-textarea code-textarea"
+                    :class="{ 'form-error': errors[0] }"
+                    placeholder='{"version": "5.3.0", "objects": []}'
+                    :disabled="readonly"
+                    rows="6"
+                  ></textarea>
+                  <small class="form-hint"
+                    >JSON данные canvas объектов (обязательно)</small
+                  >
+                  <span v-if="errors[0]" class="form-error-text">{{
+                    errors[0]
+                  }}</span>
+                </ValidationProvider>
+              </div>
+            </div>
+
+            <!-- Правая колонка - превью и дополнительная информация -->
+            <div class="form-section">
+              <h3>Превью</h3>
+
+              <!-- Превью изображения -->
+              <div class="preview-section">
+                <div v-if="form.preview_image" class="preview-image">
+                  <img :src="form.preview_image" :alt="form.name" />
+                  <button
+                    v-if="!readonly"
+                    @click="removePreviewImage"
+                    class="remove-preview"
+                    type="button"
+                  >
+                    ×
+                  </button>
+                </div>
+                <div v-else class="preview-placeholder">
+                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
+                    <path
+                      d="M19 3H5C3.89 3 3 3.89 3 5V19C3 20.11 3.89 21 5 21H19C20.11 21 21 20.11 21 19V5C21 3.89 20.11 3 19 3ZM19 19H5V5H19V19Z"
+                      fill="currentColor"
+                    />
+                    <path
+                      d="M13.5 9C14.33 9 15 8.33 15 7.5S14.33 6 13.5 6S12 6.67 12 7.5S12.67 9 13.5 9Z"
+                      fill="currentColor"
+                    />
+                    <path
+                      d="M5 15L8.5 11.5L11 14L14.5 10.5L19 15H5Z"
+                      fill="currentColor"
+                    />
+                  </svg>
+                  <span>Превью не загружено</span>
+                  <BaseButton
+                    v-if="!readonly"
+                    variant="outline-primary"
+                    size="small"
+                    @click="triggerFileSelect"
+                    class="upload-button"
+                  >
+                    Загрузить изображение
+                  </BaseButton>
+                </div>
+
                 <input
                   v-if="!readonly"
-                  v-model="newTag"
-                  @keydown.enter.prevent="addTag"
-                  @keydown="handleTagInput"
-                  placeholder="Добавить тег (Enter или запятая)"
-                  class="tag-input"
+                  ref="fileInput"
+                  type="file"
+                  accept="image/*"
+                  @change="handleFileUpload"
+                  style="display: none"
                 />
               </div>
-            </div>
 
-            <div class="form-group">
-              <label class="form-label">Объекты шаблона (JSON)</label>
-              <textarea
-                v-model="form.objectsJson"
-                class="form-textarea code-textarea"
-                :class="{ 'form-error': errors.objects }"
-                placeholder='{"version": "5.3.0", "objects": []}'
-                :disabled="readonly"
-                rows="6"
-                @blur="validateField('objects')"
-              ></textarea>
-              <small v-if="errors.objects" class="form-error-text">{{
-                errors.objects
-              }}</small>
-              <small v-else class="form-hint"
-                >JSON данные canvas объектов (обязательно)</small
-              >
-            </div>
-          </div>
-
-          <!-- Правая колонка - превью и дополнительная информация -->
-          <div class="form-section">
-            <h3>Превью</h3>
-
-            <!-- Превью изображения -->
-            <div class="preview-section">
-              <div v-if="form.preview_image" class="preview-image">
-                <img :src="form.preview_image" :alt="form.name" />
-                <button
-                  v-if="!readonly"
-                  @click="removePreviewImage"
-                  class="remove-preview"
-                  type="button"
+              <!-- Метаинформация для редактирования -->
+              <div v-if="isEdit && template" class="meta-info">
+                <h3>Информация</h3>
+                <div class="meta-item">
+                  <strong>ID:</strong> {{ template.id }}
+                </div>
+                <div class="meta-item">
+                  <strong>Создан:</strong> {{ formatDate(template.created_at) }}
+                </div>
+                <div v-if="template.created_by" class="meta-item">
+                  <strong>Автор:</strong> {{ template.created_by }}
+                </div>
+                <div
+                  v-if="
+                    template.updated_at &&
+                    template.updated_at !== template.created_at
+                  "
+                  class="meta-item"
                 >
-                  ×
-                </button>
-              </div>
-              <div v-else class="preview-placeholder">
-                <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
-                  <path
-                    d="M19 3H5C3.89 3 3 3.89 3 5V19C3 20.11 3.89 21 5 21H19C20.11 21 21 20.11 21 19V5C21 3.89 20.11 3 19 3ZM19 19H5V5H19V19Z"
-                    fill="currentColor"
-                  />
-                  <path
-                    d="M13.5 9C14.33 9 15 8.33 15 7.5S14.33 6 13.5 6S12 6.67 12 7.5S12.67 9 13.5 9Z"
-                    fill="currentColor"
-                  />
-                  <path
-                    d="M5 15L8.5 11.5L11 14L14.5 10.5L19 15H5Z"
-                    fill="currentColor"
-                  />
-                </svg>
-                <span>Превью не загружено</span>
-                <BaseButton
-                  v-if="!readonly"
-                  variant="outline-primary"
-                  size="small"
-                  @click="triggerFileSelect"
-                  class="upload-button"
-                >
-                  Загрузить изображение
-                </BaseButton>
-              </div>
-
-              <input
-                v-if="!readonly"
-                ref="fileInput"
-                type="file"
-                accept="image/*"
-                @change="handleFileUpload"
-                style="display: none"
-              />
-            </div>
-
-            <!-- Метаинформация для редактирования -->
-            <div v-if="isEdit" class="meta-info">
-              <h3>Информация</h3>
-              <div class="meta-item">
-                <strong>ID:</strong> {{ template.id }}
-              </div>
-              <div class="meta-item">
-                <strong>Создан:</strong> {{ formatDate(template.created_at) }}
-              </div>
-              <div class="meta-item">
-                <strong>Автор:</strong> {{ template.created_by }}
-              </div>
-              <div
-                v-if="template.updated_at !== template.created_at"
-                class="meta-item"
-              >
-                <strong>Обновлен:</strong> {{ formatDate(template.updated_at) }}
-              </div>
-              <div v-if="template.updated_by" class="meta-item">
-                <strong>Обновил:</strong> {{ template.updated_by }}
+                  <strong>Обновлен:</strong>
+                  {{ formatDate(template.updated_at) }}
+                </div>
+                <div v-if="template.updated_by" class="meta-item">
+                  <strong>Обновил:</strong> {{ template.updated_by }}
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        </ValidationObserver>
       </div>
     </div>
 
@@ -299,12 +310,10 @@ export default {
         description: "",
         width: "",
         height: "",
-        type: "own",
         tags: [],
         preview_image: "",
         objectsJson: "{}",
       },
-      errors: {},
       newTag: "",
       uploadingFile: false,
       selectedFile: null,
@@ -318,7 +327,7 @@ export default {
     ...mapGetters("templates", ["currentTemplate", "isLoading", "error"]),
 
     template() {
-      return this.currentTemplate;
+      return this.currentTemplate || null;
     },
 
     isEdit() {
@@ -333,18 +342,30 @@ export default {
     },
 
     isFormValid() {
-      return (
+      // Проверяем заполненность обязательных полей согласно API
+      const hasRequiredFields =
         this.form.name.trim() &&
         this.form.width.trim() &&
         this.form.height.trim() &&
-        this.form.objectsJson.trim() &&
-        Object.keys(this.errors).length === 0
-      );
+        this.form.objectsJson.trim();
+
+      // Если обязательные поля не заполнены, форма невалидна
+      if (!hasRequiredFields) {
+        return false;
+      }
+
+      // Если ValidationObserver доступен, проверяем дополнительно валидацию
+      if (this.$refs.observer && this.$refs.observer.flags) {
+        return !this.$refs.observer.flags.invalid;
+      }
+
+      // Если ValidationObserver еще не инициализирован, но поля заполнены - разрешаем
+      return true;
     },
   },
 
   async mounted() {
-    if (this.isEdit) {
+    if (this.isEdit && this.id) {
       await this.loadTemplate();
     }
   },
@@ -378,42 +399,19 @@ export default {
         description: this.template.description || "",
         width: this.template.width || "",
         height: this.template.height || "",
-        type: this.template.type || "own",
         tags: Array.isArray(this.template.tags) ? [...this.template.tags] : [],
         preview_image: this.template.preview_image || "",
         objectsJson: this.template.objects
           ? JSON.stringify(this.template.objects, null, 2)
           : "{}",
       };
-    },
 
-    validateForm() {
-      this.errors = {};
-
-      if (!this.form.name.trim()) {
-        this.errors.name = "Название обязательно";
-      }
-
-      if (!this.form.width.trim()) {
-        this.errors.width = "Ширина обязательна";
-      }
-
-      if (!this.form.height.trim()) {
-        this.errors.height = "Высота обязательна";
-      }
-
-      // Objects теперь обязательно
-      if (!this.form.objectsJson.trim()) {
-        this.errors.objects = "JSON объекты обязательны";
-      } else {
-        try {
-          JSON.parse(this.form.objectsJson);
-        } catch (error) {
-          this.errors.objects = "Некорректный JSON формат";
+      // Сбрасываем валидацию после заполнения формы
+      this.$nextTick(() => {
+        if (this.$refs.observer) {
+          this.$refs.observer.reset();
         }
-      }
-
-      return Object.keys(this.errors).length === 0;
+      });
     },
 
     addTag() {
@@ -521,13 +519,28 @@ export default {
     },
 
     async handleSave() {
-      if (!this.validateForm()) return;
+      // Проверяем валидность формы через VeeValidate
+      const isValid = await this.$refs.observer.validate();
+      if (!isValid) {
+        this.$root.$emit("show-toast", {
+          title: "Ошибка",
+          message: "Пожалуйста, исправьте ошибки в форме",
+          variant: "error",
+        });
+        return;
+      }
+
+      console.log("=== HANDLE SAVE DEBUG ===");
+      console.log("Form data:", this.form);
+      console.log("Selected file:", this.selectedFile);
+      console.log("Is edit mode:", this.isEdit);
 
       // Парсим JSON объектов
       let objects = null;
       if (this.form.objectsJson) {
         try {
           objects = JSON.parse(this.form.objectsJson);
+          console.log("Parsed objects:", objects);
         } catch (error) {
           this.$root.$emit("show-toast", {
             title: "Ошибка",
@@ -543,7 +556,6 @@ export default {
         description: this.form.description.trim(),
         width: this.form.width.trim(),
         height: this.form.height.trim(),
-        type: this.form.type,
         tags: this.form.tags.length > 0 ? this.form.tags : null,
         objects: objects,
       };
@@ -553,8 +565,11 @@ export default {
         templateData.preview_image = this.selectedFile;
       }
 
+      console.log("Final templateData:", templateData);
+
       try {
         if (this.isEdit) {
+          console.log("Calling updateTemplate with ID:", this.id);
           await this.updateTemplate({ id: this.id, data: templateData });
           this.$root.$emit("show-toast", {
             title: "Успешно!",
@@ -562,6 +577,7 @@ export default {
             variant: "success",
           });
         } else {
+          console.log("Calling createTemplate");
           await this.createTemplate(templateData);
           this.$root.$emit("show-toast", {
             title: "Успешно!",
@@ -591,43 +607,6 @@ export default {
         return new Date(dateString).toLocaleString("ru-RU");
       } catch (error) {
         return dateString;
-      }
-    },
-
-    validateField(field) {
-      // Очищаем ошибку для этого поля
-      this.$delete(this.errors, field);
-
-      switch (field) {
-        case "name":
-          if (!this.form.name.trim()) {
-            this.$set(this.errors, "name", "Название обязательно");
-          }
-          break;
-
-        case "width":
-          if (!this.form.width.trim()) {
-            this.$set(this.errors, "width", "Ширина обязательна");
-          }
-          break;
-
-        case "height":
-          if (!this.form.height.trim()) {
-            this.$set(this.errors, "height", "Высота обязательна");
-          }
-          break;
-
-        case "objects":
-          if (!this.form.objectsJson.trim()) {
-            this.$set(this.errors, "objects", "JSON объекты обязательны");
-          } else {
-            try {
-              JSON.parse(this.form.objectsJson);
-            } catch (error) {
-              this.$set(this.errors, "objects", "Некорректный JSON формат");
-            }
-          }
-          break;
       }
     },
 

@@ -94,6 +94,9 @@ export const templatesService = {
   // Создание нового шаблона
   async createTemplate(templateData) {
     try {
+      console.log("=== CREATE TEMPLATE DEBUG ===");
+      console.log("Input templateData:", templateData);
+
       const formData = new FormData();
 
       // Обязательные поля
@@ -126,6 +129,15 @@ export const templatesService = {
         formData.append("preview_image", templateData.preview_image);
       }
 
+      // Логируем содержимое FormData
+      console.log("=== FORM DATA CONTENTS ===");
+      for (let [key, value] of formData.entries()) {
+        console.log(key + ":", value);
+      }
+
+      console.log("Request URL:", "/api/v1/canvas_templates");
+      console.log("Request method: POST");
+
       const response = await apiClient.post(
         "/api/v1/canvas_templates",
         formData,
@@ -136,9 +148,17 @@ export const templatesService = {
         }
       );
 
+      console.log("=== CREATE SUCCESS ===");
+      console.log("Response:", response.data);
+
       return response.data.data || response.data;
     } catch (error) {
+      console.error("=== CREATE ERROR ===");
       console.error("Template create error:", error);
+      console.error("Error response:", error.response?.data);
+      console.error("Error status:", error.response?.status);
+      console.error("Error headers:", error.response?.headers);
+
       throw new Error(
         error.response?.data?.message ||
           error.response?.data?.error ||
@@ -150,6 +170,10 @@ export const templatesService = {
   // Обновление шаблона
   async updateTemplate(id, templateData) {
     try {
+      console.log("=== UPDATE TEMPLATE DEBUG ===");
+      console.log("Template ID:", id);
+      console.log("Input templateData:", templateData);
+
       const formData = new FormData();
 
       // Обязательные поля
@@ -164,11 +188,6 @@ export const templatesService = {
       // Необязательные поля
       if (templateData.description) {
         formData.append("description", templateData.description);
-      }
-
-      // Тип шаблона
-      if (templateData.type) {
-        formData.append("type", templateData.type);
       }
 
       // Теги - отправляем как массив
@@ -189,6 +208,15 @@ export const templatesService = {
         formData.append("preview_image", templateData.preview_image);
       }
 
+      // Логируем содержимое FormData
+      console.log("=== FORM DATA CONTENTS ===");
+      for (let [key, value] of formData.entries()) {
+        console.log(key + ":", value);
+      }
+
+      console.log("Request URL:", `/api/v1/canvas_templates/${id}`);
+      console.log("Request method: POST with _method=PATCH");
+
       // Отправляем POST запрос с _method=PATCH
       const response = await apiClient.post(
         `/api/v1/canvas_templates/${id}`,
@@ -200,9 +228,17 @@ export const templatesService = {
         }
       );
 
+      console.log("=== UPDATE SUCCESS ===");
+      console.log("Response:", response.data);
+
       return response.data.data || response.data;
     } catch (error) {
+      console.error("=== UPDATE ERROR ===");
       console.error("Template update error:", error);
+      console.error("Error response:", error.response?.data);
+      console.error("Error status:", error.response?.status);
+      console.error("Error headers:", error.response?.headers);
+
       throw new Error(
         error.response?.data?.message ||
           error.response?.data?.error ||
@@ -255,24 +291,6 @@ export const templatesService = {
       console.error("Tags get error:", error);
       // Возвращаем пустой массив если endpoint не найден
       return [];
-    }
-  },
-
-  // Поиск шаблонов
-  async searchTemplates(searchQuery, filters = {}) {
-    try {
-      // Теперь поиск обрабатывается в getTemplates на клиенте
-      return await this.getTemplates({
-        search: searchQuery,
-        ...filters,
-      });
-    } catch (error) {
-      console.error("Template search error:", error);
-      throw new Error(
-        error.response?.data?.message ||
-          error.response?.data?.error ||
-          "Ошибка поиска шаблонов"
-      );
     }
   },
 };

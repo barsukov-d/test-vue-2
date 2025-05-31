@@ -15,9 +15,6 @@ const getters = {
   isLoggedIn: (state) => state.isAuthenticated,
   isLoading: (state) => state.isLoading,
   error: (state) => state.error,
-  userEmail: (state) => state.user?.email,
-  userName: (state) =>
-    state.user?.name || state.user?.firstName || "Пользователь",
   userInfo: (state) => state.user,
 };
 
@@ -140,7 +137,7 @@ const actions = {
     }
   },
 
-  async fetchCurrentUser({ commit }) {
+  async getCurrentUser({ commit }) {
     commit("SET_LOADING", true);
     commit("SET_ERROR", null);
 
@@ -156,10 +153,6 @@ const actions = {
     } finally {
       commit("SET_LOADING", false);
     }
-  },
-
-  clearError({ commit }) {
-    commit("SET_ERROR", null);
   },
 };
 
