@@ -25,33 +25,6 @@ export function debounce(func, wait, immediate = false) {
 }
 
 /**
- * Создает throttled версию функции, которая выполняется не чаще
- * чем раз в указанное время
- * @param {Function} func - Функция для throttle
- * @param {number} limit - Минимальное время между вызовами в миллисекундах
- * @returns {Function} Throttled функция
- */
-export function throttle(func, limit) {
-  let inThrottle;
-
-  return function (...args) {
-    if (!inThrottle) {
-      func.apply(this, args);
-      inThrottle = true;
-      setTimeout(() => (inThrottle = false), limit);
-    }
-  };
-}
-
-/**
- * Генерирует уникальный ID
- * @returns {string} Уникальный идентификатор
- */
-export function generateId() {
-  return Date.now().toString(36) + Math.random().toString(36).substr(2);
-}
-
-/**
  * Форматирует дату в читаемый формат
  * @param {string|Date} date - Дата для форматирования
  * @param {Object} options - Опции форматирования
@@ -74,62 +47,35 @@ export function formatDate(date, options = {}) {
 }
 
 /**
- * Форматирует размер файла в читаемый формат
- * @param {number} bytes - Размер в байтах
- * @param {number} decimals - Количество знаков после запятой
- * @returns {string} Отформатированный размер
+ * Форматирует дату в относительный формат (для карточек)
+ * @param {string|Date} date - Дата для форматирования
+ * @returns {string} Относительная дата
  */
-export function formatFileSize(bytes, decimals = 2) {
-  if (bytes === 0) return "0 Bytes";
+export function formatRelativeDate(date) {
+  if (!date) return "";
 
-  const k = 1024;
-  const dm = decimals < 0 ? 0 : decimals;
-  const sizes = ["Bytes", "KB", "MB", "GB", "TB"];
-
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + " " + sizes[i];
-}
-
-/**
- * Обрезает текст до указанной длины с добавлением многоточия
- * @param {string} text - Исходный текст
- * @param {number} maxLength - Максимальная длина
- * @param {string} suffix - Суффикс (по умолчанию '...')
- * @returns {string} Обрезанный текст
- */
-export function truncateText(text, maxLength, suffix = "...") {
-  if (!text || text.length <= maxLength) return text;
-  return text.substring(0, maxLength - suffix.length) + suffix;
-}
-
-/**
- * Копирует текст в буфер обмена
- * @param {string} text - Текст для копирования
- * @returns {Promise<boolean>} Результат операции
- */
-export async function copyToClipboard(text) {
   try {
-    if (navigator.clipboard && window.isSecureContext) {
-      await navigator.clipboard.writeText(text);
-      return true;
+    const dateObj = new Date(date);
+    const now = new Date();
+    const diffTime = Math.abs(now - dateObj);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 1) {
+      return "вчера";
+    } else if (diffDays < 7) {
+      return `${diffDays} дн. назад`;
+    } else if (diffDays < 30) {
+      const weeks = Math.floor(diffDays / 7);
+      return `${weeks} нед. назад`;
     } else {
-      // Fallback для старых браузеров
-      const textArea = document.createElement("textarea");
-      textArea.value = text;
-      textArea.style.position = "fixed";
-      textArea.style.left = "-999999px";
-      textArea.style.top = "-999999px";
-      document.body.appendChild(textArea);
-      textArea.focus();
-      textArea.select();
-      const result = document.execCommand("copy");
-      textArea.remove();
-      return result;
+      return dateObj.toLocaleDateString("ru-RU", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      });
     }
   } catch (error) {
-    console.error("Failed to copy text: ", error);
-    return false;
+    return date;
   }
 }
 
@@ -151,77 +97,4 @@ export function extractUniqueTags(items) {
   }, []);
 
   return [...new Set(allTags)].sort();
-}
-
-/**
- * Валидирует email адрес
- * @param {string} email - Email для валидации
- * @returns {boolean} Результат валидации
- */
-export function isValidEmail(email) {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email);
-}
-
-/**
- * Безопасное парсинг JSON
- * @param {string} jsonString - JSON строка
- * @param {any} defaultValue - Значение по умолчанию
- * @returns {any} Распарсенный объект или значение по умолчанию
- */
-export function safeJsonParse(jsonString, defaultValue = null) {
-  try {
-    return JSON.parse(jsonString);
-  } catch (error) {
-    return defaultValue;
-  }
-}
-
-/**
- * Создает объект с настройками localStorage
- * @param {string} key - Ключ для localStorage
- * @returns {Object} Объект с методами для работы с localStorage
- */
-export function createLocalStorageManager(key) {
-  return {
-    get(defaultValue = null) {
-      try {
-        const item = localStorage.getItem(key);
-        return item ? JSON.parse(item) : defaultValue;
-      } catch (error) {
-        console.warn(`Error reading from localStorage key "${key}":`, error);
-        return defaultValue;
-      }
-    },
-
-    set(value) {
-      try {
-        localStorage.setItem(key, JSON.stringify(value));
-        return true;
-      } catch (error) {
-        console.warn(`Error writing to localStorage key "${key}":`, error);
-        return false;
-      }
-    },
-
-    remove() {
-      try {
-        localStorage.removeItem(key);
-        return true;
-      } catch (error) {
-        console.warn(`Error removing localStorage key "${key}":`, error);
-        return false;
-      }
-    },
-
-    clear() {
-      try {
-        localStorage.clear();
-        return true;
-      } catch (error) {
-        console.warn("Error clearing localStorage:", error);
-        return false;
-      }
-    },
-  };
 }

@@ -102,6 +102,7 @@
 </template>
 
 <script>
+import { formatRelativeDate } from "@/utils/helpers";
 import BaseCard from "@/components/ui/BaseCard.vue";
 import BaseButton from "@/components/ui/BaseButton.vue";
 
@@ -142,31 +143,7 @@ export default {
     },
 
     formatDate(dateString) {
-      if (!dateString) return "";
-
-      try {
-        const date = new Date(dateString);
-        const now = new Date();
-        const diffTime = Math.abs(now - date);
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-        if (diffDays === 1) {
-          return "вчера";
-        } else if (diffDays < 7) {
-          return `${diffDays} дн. назад`;
-        } else if (diffDays < 30) {
-          const weeks = Math.floor(diffDays / 7);
-          return `${weeks} нед. назад`;
-        } else {
-          return date.toLocaleDateString("ru-RU", {
-            day: "numeric",
-            month: "short",
-            year: "numeric",
-          });
-        }
-      } catch (error) {
-        return dateString;
-      }
+      return formatRelativeDate(dateString);
     },
 
     getStatusText(status) {

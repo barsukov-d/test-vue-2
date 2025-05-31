@@ -73,9 +73,6 @@ export default {
     ) {
       try {
         await this.validateToken();
-        if (this.$store.state.auth.isAuthenticated) {
-          await this.getCurrentUser();
-        }
       } catch (error) {
         console.error("Token validation failed:", error);
       }
@@ -83,7 +80,7 @@ export default {
   },
 
   methods: {
-    ...mapActions("auth", ["logout", "validateToken", "getCurrentUser"]),
+    ...mapActions("auth", ["logout", "validateToken"]),
 
     async handleLogout() {
       try {

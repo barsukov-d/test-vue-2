@@ -137,7 +137,6 @@ export default {
     return {
       searchQuery: "",
       selectedTags: [],
-      currentPage: 1,
       templateToDelete: null,
       isDeleting: false,
     };
@@ -206,7 +205,6 @@ export default {
 
     debouncedSearch: debounce(function () {
       // Поиск с задержкой для оптимизации
-      this.currentPage = 1;
     }, 300),
 
     toggleTag(tag) {
@@ -215,13 +213,11 @@ export default {
       } else {
         this.selectedTags.push(tag);
       }
-      this.currentPage = 1;
     },
 
     clearFilters() {
       this.selectedTags = [];
       this.searchQuery = "";
-      this.currentPage = 1;
     },
 
     editTemplate(template) {
@@ -265,10 +261,6 @@ export default {
         return;
       }
       this.templateToDelete = null;
-    },
-
-    changePage(page) {
-      this.currentPage = page;
     },
 
     createNewTemplate() {
@@ -455,13 +447,6 @@ export default {
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 2rem;
   margin-bottom: 2rem;
-}
-
-.pagination {
-  display: flex;
-  justify-content: center;
-  gap: 0.5rem;
-  margin-top: 2rem;
 }
 
 @keyframes spin {

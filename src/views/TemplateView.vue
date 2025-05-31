@@ -279,6 +279,7 @@
 
 <script>
 import { mapGetters, mapActions } from "vuex";
+import { formatDate as formatDateHelper } from "@/utils/helpers";
 import BaseButton from "@/components/ui/BaseButton.vue";
 import BaseInput from "@/components/ui/BaseInput.vue";
 import ConfirmDialog from "@/components/ui/ConfirmDialog.vue";
@@ -602,12 +603,7 @@ export default {
     },
 
     formatDate(dateString) {
-      if (!dateString) return "";
-      try {
-        return new Date(dateString).toLocaleString("ru-RU");
-      } catch (error) {
-        return dateString;
-      }
+      return formatDateHelper(dateString);
     },
 
     async handleDeleteTemplate() {

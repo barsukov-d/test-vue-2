@@ -63,10 +63,11 @@ export const authService = {
         throw new Error("No token found");
       }
 
-      // Возвращаем успешный результат без запроса к API
-      // (так как эндпоинт /api/v1/user не существует)
+      // Делаем запрос к API для проверки токена
+      const response = await apiClient.get("/api/v1/user");
+
       return {
-        user: { email: "user@example.com" }, // Заглушка
+        user: response.data,
         isValid: true,
       };
     } catch (error) {
@@ -76,25 +77,26 @@ export const authService = {
     }
   },
 
-  // Получение текущего пользователя
-  async getCurrentUser() {
-    // Возвращаем заглушку пользователя, так как эндпоинт /api/v1/user не существует
-    return { email: "user@example.com", name: "Пользователь" };
-  },
-
   // Выход из системы
   async logout() {
     try {
-      // Очищаем токен безопасным способом
+      // Делаем запрос к API для выхода из системы
+      await apiClient.post("/api/v1/logout");
+
+      // Очищаем токен после успешного ответа
       this.clearToken();
 
-      // Не делаем запрос к API, так как эндпоинт /api/v1/logout не существует
       return { message: "Успешный выход" };
     } catch (error) {
       console.error("Logout error:", error);
-      // Все равно очищаем токен
+      // Все равно очищаем токен даже при ошибке API
       this.clearToken();
-      throw error;
+      throw new Error(
+        error.response?.data?.message ||
+          error.response?.data?.error ||
+          error.message ||
+          "Ошибка при выходе из системы"
+      );
     }
   },
 

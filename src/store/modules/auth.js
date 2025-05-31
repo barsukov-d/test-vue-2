@@ -136,24 +136,6 @@ const actions = {
       return false;
     }
   },
-
-  async getCurrentUser({ commit }) {
-    commit("SET_LOADING", true);
-    commit("SET_ERROR", null);
-
-    try {
-      const user = await authService.getCurrentUser();
-      commit("SET_USER", user);
-      return user;
-    } catch (error) {
-      const errorMessage =
-        error.message || "Ошибка получения данных пользователя";
-      commit("SET_ERROR", errorMessage);
-      throw new Error(errorMessage);
-    } finally {
-      commit("SET_LOADING", false);
-    }
-  },
 };
 
 export default {

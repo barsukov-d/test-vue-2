@@ -23,6 +23,7 @@
                   :error="errors[0]"
                   :class="classes"
                   :disabled="isLoading"
+                  autocomplete="email"
                   autofocus
                 />
               </ValidationProvider>
@@ -42,6 +43,7 @@
                   :error="errors[0]"
                   :class="classes"
                   :disabled="isLoading"
+                  autocomplete="current-password"
                 />
               </ValidationProvider>
             </div>
