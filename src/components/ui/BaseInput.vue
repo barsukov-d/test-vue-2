@@ -1,11 +1,6 @@
 <template>
   <div class="input-group" :class="inputGroupClasses">
-    <label
-      v-if="label"
-      :for="inputId"
-      class="input-label"
-      :class="{ 'input-label--required': required }"
-    >
+    <label v-if="label" :for="inputId" class="input-label">
       {{ label }}
     </label>
 
@@ -18,7 +13,6 @@
         :placeholder="placeholder"
         :disabled="disabled"
         :readonly="readonly"
-        :required="required"
         :class="inputClasses"
         :aria-describedby="ariaDescribedBy"
         :aria-invalid="hasError"
@@ -60,15 +54,7 @@ export default {
       type: String,
       default: "text",
       validator: (value) =>
-        [
-          "text",
-          "email",
-          "password",
-          "number",
-          "tel",
-          "url",
-          "search",
-        ].includes(value),
+        ["text", "email", "password", "search"].includes(value),
     },
     label: {
       type: String,
@@ -78,18 +64,9 @@ export default {
       type: String,
       default: "",
     },
-    hint: {
-      type: String,
-      default: "",
-    },
     error: {
       type: String,
       default: "",
-    },
-    size: {
-      type: String,
-      default: "medium",
-      validator: (value) => ["small", "medium", "large"].includes(value),
     },
     disabled: {
       type: Boolean,
@@ -99,21 +76,12 @@ export default {
       type: Boolean,
       default: false,
     },
-    required: {
-      type: Boolean,
-      default: false,
-    },
-    validateOnBlur: {
-      type: Boolean,
-      default: true,
-    },
   },
 
   data() {
     return {
       inputId: `input-${++inputIdCounter}`,
       isFocused: false,
-      hasBeenBlurred: false,
     };
   },
 
@@ -132,7 +100,6 @@ export default {
     inputClasses() {
       return [
         "input",
-        `input--${this.size}`,
         {
           "input--error": this.hasError,
           "input--disabled": this.disabled,
@@ -141,7 +108,7 @@ export default {
     },
 
     hasError() {
-      return !!(this.error && (this.hasBeenBlurred || !this.validateOnBlur));
+      return !!this.error;
     },
 
     errorMessage() {
@@ -149,13 +116,10 @@ export default {
     },
 
     ariaDescribedBy() {
-      const ids = [];
       if (this.hasError) {
-        ids.push(`${this.inputId}-error`);
-      } else if (this.hint) {
-        ids.push(`${this.inputId}-hint`);
+        return `${this.inputId}-error`;
       }
-      return ids.length > 0 ? ids.join(" ") : null;
+      return null;
     },
   },
 
@@ -166,7 +130,6 @@ export default {
 
     handleBlur(event) {
       this.isFocused = false;
-      this.hasBeenBlurred = true;
       this.$emit("blur", event);
     },
 

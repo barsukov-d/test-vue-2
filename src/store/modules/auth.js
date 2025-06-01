@@ -47,19 +47,21 @@ const mutations = {
 };
 
 const actions = {
-  async initializeAuth({ commit, dispatch }) {
+  async initializeAuth({ commit, dispatch, state }) {
     commit("SET_LOADING", true);
 
     try {
-      // Инициализируем токен из localStorage
+      // Инициализируем токен из sessionStorage
       authService.initializeAuth();
 
       // Проверяем, есть ли валидный токен
       if (authService.isAuthenticated()) {
         try {
-          const userData = await authService.validateToken();
+          await authService.validateToken();
+          // Поскольку validateToken больше не возвращает user данные,
+          // устанавливаем состояние авторизации с существующими данными пользователя
           commit("SET_AUTH_DATA", {
-            user: userData.user,
+            user: state.user, // Сохраняем существующие данные пользователя
             token: authService.getToken(),
           });
           return true;
@@ -87,6 +89,7 @@ const actions = {
     commit("SET_ERROR", null);
 
     try {
+      // authService уже показывает уведомления, поэтому здесь их не дублируем
       const authData = await authService.login(credentials);
 
       commit("SET_AUTH_DATA", {
@@ -98,6 +101,7 @@ const actions = {
     } catch (error) {
       const errorMessage = error.message || "Ошибка авторизации";
       commit("SET_ERROR", errorMessage);
+      // Уведомление об ошибке уже показано в authService
       throw new Error(errorMessage);
     } finally {
       commit("SET_LOADING", false);
@@ -108,24 +112,28 @@ const actions = {
     commit("SET_LOADING", true);
 
     try {
+      // authService уже показывает уведомления, поэтому здесь их не дублируем
       await authService.logout();
     } catch (error) {
       console.error("Logout error:", error);
+      // Уведомление об ошибке уже показано в authService
     } finally {
       commit("CLEAR_AUTH_DATA");
       commit("SET_LOADING", false);
     }
   },
 
-  async validateToken({ commit, dispatch }) {
+  async validateToken({ commit, dispatch, state }) {
     try {
       if (!authService.isAuthenticated()) {
         throw new Error("No token found");
       }
 
-      const userData = await authService.validateToken();
+      await authService.validateToken();
+      // Поскольку validateToken больше не возвращает user данные,
+      // сохраняем существующие данные пользователя
       commit("SET_AUTH_DATA", {
-        user: userData.user,
+        user: state.user, // Сохраняем существующие данные пользователя
         token: authService.getToken(),
       });
 

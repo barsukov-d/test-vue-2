@@ -80,15 +80,7 @@ export default {
     confirmVariant: {
       type: String,
       default: "danger",
-      validator: (value) =>
-        [
-          "primary",
-          "secondary",
-          "success",
-          "danger",
-          "warning",
-          "info",
-        ].includes(value),
+      validator: (value) => ["primary", "secondary", "danger"].includes(value),
     },
     loading: {
       type: Boolean,

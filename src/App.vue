@@ -84,10 +84,14 @@ export default {
 
     async handleLogout() {
       try {
+        // authService уже показывает уведомления об успешном/неуспешном выходе
         await this.logout();
         this.$router.push("/login");
       } catch (error) {
+        // Уведомление об ошибке уже показано в authService
         console.error("Logout failed:", error);
+        // Все равно перенаправляем на страницу входа в случае ошибки
+        this.$router.push("/login");
       }
     },
   },

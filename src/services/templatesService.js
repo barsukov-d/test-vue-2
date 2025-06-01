@@ -4,28 +4,7 @@ export const templatesService = {
   // Получение списка Canvas Templates
   async getTemplates(params = {}) {
     try {
-      const requestParams = {};
-
-      // Пагинация
-      if (params.page) {
-        requestParams["page[number]"] = params.page;
-      }
-
-      // Фильтры согласно API документации
-      if (params.company_id) {
-        requestParams["filter[company_id]"] = params.company_id;
-      }
-
-      if (params.collection_id) {
-        requestParams["filter[collection_id]"] = params.collection_id;
-      }
-
-      // Убираем неподдерживаемые параметры из API запроса
-      // search и tags будут обрабатываться на клиенте
-
-      const response = await apiClient.get("/api/v1/canvas_templates", {
-        params: requestParams,
-      });
+      const response = await apiClient.get("/api/v1/canvas_templates");
 
       // Нормализуем ответ для нашего store
       // API может возвращать данные в разных форматах
@@ -60,11 +39,7 @@ export const templatesService = {
 
       return {
         data: templates,
-        total:
-          response.data.meta?.total || response.data.total || templates.length,
-        page: response.data.meta?.current_page || params.page || 1,
-        limit: response.data.meta?.per_page || params.limit || 20,
-        meta: response.data.meta || {},
+        total: templates.length,
       };
     } catch (error) {
       console.error("Templates API error:", error);

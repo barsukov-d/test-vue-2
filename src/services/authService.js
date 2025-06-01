@@ -1,4 +1,5 @@
 import apiClient from "./api";
+import notificationService from "./notificationService";
 
 export const authService = {
   // Авторизация пользователя
@@ -16,19 +17,53 @@ export const authService = {
         this.setToken(token);
       }
 
-      return {
+      const authData = {
         user: response.data.user || response.data,
         token: response.data.access_token || response.data.token,
         message: response.data.message || "Успешная авторизация",
       };
+
+      // Показываем уведомление об успешном входе
+      const username = authData.user?.name || authData.user?.email || "";
+      notificationService.auth.loginSuccess(username);
+
+      return authData;
     } catch (error) {
       console.error("Login error:", error);
-      throw new Error(
+      const errorMessage =
         error.response?.data?.message ||
-          error.response?.data?.error ||
-          error.message ||
-          "Ошибка авторизации"
-      );
+        error.response?.data?.error ||
+        error.message ||
+        "Ошибка авторизации";
+
+      // Показываем уведомление об ошибке входа
+      notificationService.auth.loginError(errorMessage);
+
+      throw new Error(errorMessage);
+    }
+  },
+
+  // Выход из системы (клиентский)
+  async logout() {
+    try {
+      // Очищаем токен локально (без вызова API)
+      this.clearToken();
+
+      // Показываем уведомление об успешном выходе
+      notificationService.auth.logoutSuccess();
+
+      return { message: "Успешный выход" };
+    } catch (error) {
+      console.error("Logout error:", error);
+      // В любом случае очищаем токен
+      this.clearToken();
+
+      const errorMessage = error.message || "Ошибка при выходе из системы";
+
+      // Показываем уведомление об ошибке выхода
+      notificationService.auth.logoutError(errorMessage);
+
+      throw new Error(errorMessage);
     }
   },
 
@@ -54,7 +89,7 @@ export const authService = {
     return token.length > 10;
   },
 
-  // Проверка валидности токена и получение данных пользователя
+  // Простая валидация токена (только локальная проверка)
   async validateToken() {
     try {
       // Проверяем наличие токена локально
@@ -63,40 +98,15 @@ export const authService = {
         throw new Error("No token found");
       }
 
-      // Делаем запрос к API для проверки токена
-      const response = await apiClient.get("/api/v1/user");
-
+      // Возвращаем успешную валидацию если токен есть
+      // В реальном приложении здесь можно добавить проверку срока действия токена
       return {
-        user: response.data,
         isValid: true,
       };
     } catch (error) {
       console.error("Token validation error:", error);
       this.clearToken();
       throw error;
-    }
-  },
-
-  // Выход из системы
-  async logout() {
-    try {
-      // Делаем запрос к API для выхода из системы
-      await apiClient.post("/api/v1/logout");
-
-      // Очищаем токен после успешного ответа
-      this.clearToken();
-
-      return { message: "Успешный выход" };
-    } catch (error) {
-      console.error("Logout error:", error);
-      // Все равно очищаем токен даже при ошибке API
-      this.clearToken();
-      throw new Error(
-        error.response?.data?.message ||
-          error.response?.data?.error ||
-          error.message ||
-          "Ошибка при выходе из системы"
-      );
     }
   },
 

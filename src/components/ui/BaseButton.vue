@@ -27,21 +27,9 @@ export default {
         [
           "primary",
           "secondary",
-          "success",
           "danger",
-          "warning",
-          "info",
-          "light",
-          "dark",
-          "ghost",
-          "outline-primary",
-          "outline-secondary",
-          "outline-success",
           "outline-danger",
-          "outline-warning",
-          "outline-info",
-          "outline-light",
-          "outline-dark",
+          "outline-secondary",
         ].includes(value),
     },
     size: {
@@ -52,7 +40,7 @@ export default {
     type: {
       type: String,
       default: "button",
-      validator: (value) => ["button", "submit", "reset"].includes(value),
+      validator: (value) => ["button", "submit"].includes(value),
     },
     disabled: {
       type: Boolean,
@@ -65,14 +53,6 @@ export default {
     loadingText: {
       type: String,
       default: "Загрузка...",
-    },
-    block: {
-      type: Boolean,
-      default: false,
-    },
-    rounded: {
-      type: Boolean,
-      default: false,
     },
   },
 
@@ -90,8 +70,6 @@ export default {
         `btn--${this.variant}`,
         `btn--${this.size}`,
         {
-          "btn--block": this.block,
-          "btn--rounded": this.rounded,
           "btn--loading": this.loading,
           "btn--disabled": this.disabled,
         },
@@ -198,17 +176,6 @@ export default {
     }
   }
 
-  &--success {
-    background-color: $success-color;
-    border-color: $success-color;
-    color: $white;
-
-    &:hover:not(:disabled) {
-      background-color: $success-dark;
-      border-color: $success-dark;
-    }
-  }
-
   &--danger {
     background-color: $danger-color;
     border-color: $danger-color;
@@ -220,72 +187,7 @@ export default {
     }
   }
 
-  &--warning {
-    background-color: $warning-color;
-    border-color: $warning-color;
-    color: $dark-color;
-
-    &:hover:not(:disabled) {
-      background-color: $warning-dark;
-      border-color: $warning-dark;
-    }
-  }
-
-  &--info {
-    background-color: $info-color;
-    border-color: $info-color;
-    color: $white;
-
-    &:hover:not(:disabled) {
-      background-color: $info-dark;
-      border-color: $info-dark;
-    }
-  }
-
-  &--light {
-    background-color: $light-color;
-    border-color: $light-color;
-    color: $dark-color;
-
-    &:hover:not(:disabled) {
-      background-color: $light-dark;
-      border-color: $light-dark;
-    }
-  }
-
-  &--dark {
-    background-color: $dark-color;
-    border-color: $dark-color;
-    color: $white;
-
-    &:hover:not(:disabled) {
-      background-color: $dark-light;
-      border-color: $dark-light;
-    }
-  }
-
-  &--ghost {
-    background-color: transparent;
-    border-color: transparent;
-    color: $text-primary;
-
-    &:hover:not(:disabled) {
-      background-color: $bg-secondary;
-    }
-  }
-
   // Outline варианты
-  &--outline-primary {
-    background-color: transparent;
-    border-color: $primary-color;
-    color: $primary-color;
-
-    &:hover:not(:disabled) {
-      background-color: $primary-color;
-      color: $white;
-    }
-  }
-
   &--outline-secondary {
     background-color: transparent;
     border-color: $secondary-color;
@@ -293,17 +195,6 @@ export default {
 
     &:hover:not(:disabled) {
       background-color: $secondary-color;
-      color: $white;
-    }
-  }
-
-  &--outline-success {
-    background-color: transparent;
-    border-color: $success-color;
-    color: $success-color;
-
-    &:hover:not(:disabled) {
-      background-color: $success-color;
       color: $white;
     }
   }
@@ -317,60 +208,6 @@ export default {
       background-color: $danger-color;
       color: $white;
     }
-  }
-
-  &--outline-warning {
-    background-color: transparent;
-    border-color: $warning-color;
-    color: $warning-color;
-
-    &:hover:not(:disabled) {
-      background-color: $warning-color;
-      color: $dark-color;
-    }
-  }
-
-  &--outline-info {
-    background-color: transparent;
-    border-color: $info-color;
-    color: $info-color;
-
-    &:hover:not(:disabled) {
-      background-color: $info-color;
-      color: $white;
-    }
-  }
-
-  &--outline-light {
-    background-color: transparent;
-    border-color: $light-color;
-    color: $text-primary;
-
-    &:hover:not(:disabled) {
-      background-color: $light-color;
-      color: $dark-color;
-    }
-  }
-
-  &--outline-dark {
-    background-color: transparent;
-    border-color: $dark-color;
-    color: $dark-color;
-
-    &:hover:not(:disabled) {
-      background-color: $dark-color;
-      color: $white;
-    }
-  }
-
-  // Модификаторы
-  &--block {
-    display: flex;
-    width: 100%;
-  }
-
-  &--rounded {
-    border-radius: 50px;
   }
 
   &--loading {

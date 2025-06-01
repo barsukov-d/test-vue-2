@@ -198,30 +198,49 @@ export default {
 
   methods: {
     ...mapActions("templates", {
-      initialize: "initialize",
       fetchTemplates: "fetchTemplates",
-      deleteTemplateFromStore: "deleteTemplate", // Псевдоним для избежания конфликта
+      deleteTemplate: "deleteTemplate",
+      initialize: "initialize",
     }),
 
+    // Создание нового шаблона
+    createNewTemplate() {
+      this.$router.push("/template/new");
+    },
+
+    // Редактирование шаблона
+    editTemplate(template) {
+      this.$router.push(`/template/${template.id}`);
+    },
+
+    // Обновление списка шаблонов
+    async refreshTemplates() {
+      try {
+        await this.fetchTemplates();
+      } catch (error) {
+        console.error("Error refreshing templates:", error);
+      }
+    },
+
+    // Поиск с задержкой
     debouncedSearch: debounce(function () {
-      // Поиск с задержкой для оптимизации
+      // Поиск происходит автоматически через computed свойство filteredTemplates
     }, 300),
 
+    // Переключение тега
     toggleTag(tag) {
-      if (this.selectedTags.includes(tag)) {
-        this.selectedTags = this.selectedTags.filter((t) => t !== tag);
+      const index = this.selectedTags.indexOf(tag);
+      if (index > -1) {
+        this.selectedTags.splice(index, 1);
       } else {
         this.selectedTags.push(tag);
       }
     },
 
+    // Очистка фильтров
     clearFilters() {
-      this.selectedTags = [];
       this.searchQuery = "";
-    },
-
-    editTemplate(template) {
-      this.$router.push(`/template/${template.id}`);
+      this.selectedTags = [];
     },
 
     handleDeleteTemplate(template) {
@@ -232,7 +251,7 @@ export default {
       if (this.templateToDelete && !this.isDeleting) {
         this.isDeleting = true;
         try {
-          await this.deleteTemplateFromStore(this.templateToDelete.id);
+          await this.deleteTemplate(this.templateToDelete.id);
           this.$root.$emit("show-toast", {
             title: "Успешно!",
             message: `Шаблон "${this.templateToDelete.name}" удален`,
@@ -261,36 +280,6 @@ export default {
         return;
       }
       this.templateToDelete = null;
-    },
-
-    createNewTemplate() {
-      // Check if we're already on the target route to prevent unnecessary navigation
-      if (this.$route.path === "/template/new") {
-        return;
-      }
-
-      // Navigate to create template page with error handling
-      this.$router.push("/template/new").catch((err) => {
-        // Ignore navigation cancelled errors (these are harmless)
-        if (
-          err.name !== "NavigationCancelled" &&
-          err.name !== "NavigationDuplicated"
-        ) {
-          console.error("Navigation error:", err);
-        }
-      });
-    },
-
-    refreshTemplates() {
-      // Принудительно обновляем список шаблонов
-      this.fetchTemplates().catch((error) => {
-        console.error("Error refreshing templates:", error);
-        this.$root.$emit("show-toast", {
-          title: "Ошибка",
-          message: "Не удалось обновить список шаблонов",
-          variant: "error",
-        });
-      });
     },
   },
 };

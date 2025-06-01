@@ -1,8 +1,9 @@
 import axios from "axios";
+import { API_BASE_URL } from "@/config/constants";
 
 // Создаем экземпляр axios с базовой конфигурацией
 const apiClient = axios.create({
-  baseURL: "https://dev-api.aiscreen.io", // Реальный API endpoint
+  baseURL: API_BASE_URL,
   timeout: 10000, // 10 секунд
   headers: {
     "Content-Type": "application/json",

@@ -48,16 +48,6 @@
               </ValidationProvider>
             </div>
 
-            <!-- Общая ошибка -->
-            <div v-if="error" class="error-message">
-              {{ error }}
-            </div>
-
-            <!-- Успешное сообщение -->
-            <div v-if="successMessage" class="success-message">
-              {{ successMessage }}
-            </div>
-
             <BaseButton
               type="submit"
               variant="primary"
@@ -110,8 +100,6 @@ export default {
         email: "",
         password: "",
       },
-      error: "",
-      successMessage: "",
     };
   },
 
@@ -133,24 +121,19 @@ export default {
     ...mapActions("auth", ["login"]),
 
     async handleLogin() {
-      this.error = "";
-      this.successMessage = "";
-
       try {
         await this.login({
           email: this.credentials.email.trim(),
           password: this.credentials.password,
         });
 
-        this.successMessage = "Авторизация прошла успешно!";
-
-        // Небольшая задержка для отображения сообщения об успехе
+        // Небольшая задержка для отображения toast уведомления
         setTimeout(() => {
           // Navigation guard сам перенаправит нас на нужную страницу
           this.$router.push("/");
-        }, 500);
+        }, 1000);
       } catch (error) {
-        this.error = error.message || "Ошибка авторизации";
+        // Уведомление об ошибке уже показано в authService
         console.error("Login error:", error);
       }
     },
